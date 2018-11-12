@@ -22,7 +22,10 @@ use smallvec::SmallVec;
 
 pub struct ShipInputSystem;
 
-/// Handle ship inputs.
+/// Handle inputs and mutate world accordingly.
+///
+/// * Applies rotation (axes `rotate`) and acceleration (axes `accelerate`) to your ship.
+/// * Spawns bullets on `shoot` action..
 impl<'s> System<'s> for ShipInputSystem {
     type SystemData = (
         WriteStorage<'s, Ship>,
@@ -148,6 +151,8 @@ impl<'s> System<'s> for ShipInputSystem {
 }
 
 /// Limit objects within arena.
+///
+/// If an object goes out of bounds, moves it to the other side of the arena.
 pub struct LimitObjectsSystem;
 
 impl<'s> System<'s> for LimitObjectsSystem {
@@ -202,6 +207,9 @@ impl<'s> System<'s> for KillBulletsSystem {
 }
 
 /// System to spawn random asteroids.
+///
+/// Asteroids are always spawned by the lower and upper edges, but with random velocity vectors
+/// capped by the parameters in this system.
 pub struct RandomAsteroidSystem {
     pub time_to_spawn: f32,
     pub max_velocity: f32,
@@ -213,7 +221,7 @@ impl RandomAsteroidSystem {
         Self {
             time_to_spawn: 2f32,
             max_velocity: 100f32,
-            max_rotation: 0.2f32,
+            max_rotation: 30f32,
         }
     }
 }
@@ -280,6 +288,9 @@ impl<'s> System<'s> for RandomAsteroidSystem {
     }
 }
 
+/// Applies physics to `Physical` entities.
+///
+/// The system applies velocity and rotation to the objects in the system.
 pub struct PhysicsSystem;
 
 impl<'s> System<'s> for PhysicsSystem {
@@ -293,15 +304,22 @@ impl<'s> System<'s> for PhysicsSystem {
         let time_delta = time.delta_seconds();
 
         for (physical, local) in (&physicals, &mut locals).join() {
-            // Apply existing velocities.
+            // Apply existing velocity and rotational velocity.
             let movement = physical.velocity * time_delta;
 
             local.move_global(Vector3::new(movement.x, movement.y, 0f32));
-            local.roll_local(physical.rotation);
+            local.roll_local(physical.rotation * time_delta);
         }
     }
 }
 
+/// Handle very simple collisions through ncollide2d's broad-phase DBVT implementation.
+///
+/// It _should_ be good enough since we are using very simple primitive (and zero margins) to
+/// detect collisions.
+///
+/// I'm a bit concerned about re-creating the phase for every frame, but we don't have a ton of
+/// objects so it should be fine.
 pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {

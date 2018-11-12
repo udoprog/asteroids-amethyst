@@ -152,7 +152,7 @@ impl Default for Ship {
     fn default() -> Ship {
         Ship {
             acceleration: 80f32,
-            rotation: 8f32,
+            rotation: 180f32,
             reload_timer: 0f32,
             time_to_reload: 0.2f32,
             bullet_velocity: 150f32,
@@ -180,11 +180,13 @@ impl Component for Bullet {
     type Storage = DenseVecStorage<Self>;
 }
 
-pub struct Asteroid {}
+pub struct Asteroid {
+}
 
 impl Asteroid {
     pub fn new() -> Asteroid {
-        Asteroid {}
+        Asteroid {
+        }
     }
 }
 
