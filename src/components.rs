@@ -5,7 +5,6 @@ use amethyst::{
     },
     ecs::prelude::{Component, DenseVecStorage, Entity, NullStorage},
 };
-use crate::resources::Collider;
 use ncollide2d::{
     bounding_volume::{self, AABB},
     broad_phase::BroadPhase,
@@ -40,30 +39,31 @@ impl Component for Physical {
 pub struct Bounded {
     /// Bounding volume of the entity.
     pub shape: Ball<f32>,
-    /// A registered collider.
-    pub collider: Collider,
 }
 
 impl Bounded {
-    pub fn new(shape: Ball<f32>, collider: Collider) -> Self {
-        Self { shape, collider }
+    pub fn new(shape: Ball<f32>) -> Self {
+        Self { shape }
     }
 
-    pub fn from_local(entity: Entity, size: f32, collider: impl Fn(Entity) -> Collider) -> Self {
-        let ball = Ball::new(size);
-        let c = collider(entity);
-        Bounded::new(ball, c)
+    pub fn from_local(size: f32) -> Self {
+        Bounded::new(Ball::new(size))
     }
 
     /// Apply this bounding volume to a broad phase.
-    pub fn apply_to_broad_phase<B>(&self, local: &Transform, broad_phase: &mut B) -> AABB<f32>
+    pub fn apply_to_broad_phase<B>(
+        &self,
+        local: &Transform,
+        collider: Collider,
+        broad_phase: &mut B,
+    ) -> AABB<f32>
     where
         B: BroadPhase<f32, AABB<f32>, Collider>,
     {
         let t = local.translation();
         let pos = Isometry2::new(Vector2::new(t.x, t.y), nalgebra::zero());
         let vol = bounding_volume::aabb(&self.shape, &pos);
-        let _ = broad_phase.create_proxy(vol.clone(), self.collider);
+        let _ = broad_phase.create_proxy(vol.clone(), collider);
         vol
     }
 }
@@ -124,4 +124,32 @@ pub struct ConstrainedObject;
 
 impl Component for ConstrainedObject {
     type Storage = NullStorage<Self>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Collider {
+    Bullet(Entity),
+    Ship(Entity),
+    Asteroid(Entity),
+    /// Asteroid can collide, but will not register collissions until it's gone one frame without
+    /// collisions.
+    DeferredAsteroid(Entity),
+}
+
+impl Collider {
+    /// Access the entity this collider is part of.
+    pub fn entity(&self) -> Entity {
+        use self::Collider::*;
+
+        match *self {
+            Bullet(e) => e,
+            Ship(e) => e,
+            Asteroid(e) => e,
+            DeferredAsteroid(e) => e,
+        }
+    }
+}
+
+impl Component for Collider {
+    type Storage = DenseVecStorage<Self>;
 }

@@ -19,8 +19,8 @@ impl ShipResource {
         self.sprite_sheet.sprite_render(0)
     }
 
-    pub fn new_bounded(&self, entity: Entity) -> Bounded {
-        Bounded::from_local(entity, 6.0, Collider::Ship)
+    pub fn new_bounded(&self) -> Bounded {
+        Bounded::from_local(6.0)
     }
 }
 
@@ -38,8 +38,8 @@ impl Bullets {
         self.sprite_sheet.sprite_render(0)
     }
 
-    pub fn new_bounded(&self, entity: Entity) -> Bounded {
-        Bounded::from_local(entity, 2.0, Collider::Bullet)
+    pub fn new_bounded(&self) -> Bounded {
+        Bounded::from_local(2.0)
     }
 }
 
@@ -61,13 +61,8 @@ impl Asteroids {
         self.sprite_sheet.sprite_render(index)
     }
 
-    pub fn new_bounded(
-        &self,
-        entity: Entity,
-        scale: f32,
-        collider: impl Fn(Entity) -> Collider,
-    ) -> Bounded {
-        Bounded::from_local(entity, Self::MIN_RADIUS * scale, collider)
+    pub fn new_bounded(&self, scale: f32) -> Bounded {
+        Bounded::from_local(Self::MIN_RADIUS * scale)
     }
 }
 
@@ -117,30 +112,6 @@ pub struct Game {
     pub restart: bool,
     /// Game modifiers in place.
     pub modifiers: GameModifiers,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Collider {
-    Bullet(Entity),
-    Ship(Entity),
-    Asteroid(Entity),
-    /// Asteroid can collide, but will not register collissions until it's gone one frame without
-    /// collisions.
-    DeferredAsteroid(Entity),
-}
-
-impl Collider {
-    /// Access the entity this collider is part of.
-    pub fn entity(&self) -> Entity {
-        use self::Collider::*;
-
-        match *self {
-            Bullet(e) => e,
-            Ship(e) => e,
-            Asteroid(e) => e,
-            DeferredAsteroid(e) => e,
-        }
-    }
 }
 
 #[derive(Debug)]

@@ -15,8 +15,8 @@ use amethyst::{
 };
 use crate::{
     audio::Sounds,
-    components::{Bounded, Bullet, ConstrainedObject, Physical, Ship},
-    resources::{Asteroids, Bullets, Collider, Game, RandomGen, Score},
+    components::{Bounded, Bullet, Collider, ConstrainedObject, Physical, Ship},
+    resources::{Asteroids, Bullets, Game, RandomGen, Score},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
 use log::{error, trace};
@@ -181,7 +181,8 @@ impl<'s> System<'s> for ShipInputSystem {
             lazy.insert(e, ConstrainedObject);
             lazy.insert(e, bullet_resource.new_sprite_render());
             lazy.insert(e, Bullet::new());
-            lazy.insert(e, bullet_resource.new_bounded(e));
+            lazy.insert(e, bullet_resource.new_bounded());
+            lazy.insert(e, Collider::Bullet(e));
         }
 
         struct NewBullet {
@@ -333,14 +334,15 @@ fn spawn_asteroid(
     lazy.insert(e, physical);
     lazy.insert(e, ConstrainedObject);
     lazy.insert(e, asteroid_resource.new_sprite_render(rand));
+    lazy.insert(e, asteroid_resource.new_bounded(scale));
 
-    let bounding_volume = if defer_adding_bounds {
-        asteroid_resource.new_bounded(e, scale, Collider::DeferredAsteroid)
+    let collider = if defer_adding_bounds {
+        Collider::DeferredAsteroid(e)
     } else {
-        asteroid_resource.new_bounded(e, scale, Collider::Asteroid)
+        Collider::Asteroid(e)
     };
 
-    lazy.insert(e, bounding_volume);
+    lazy.insert(e, collider);
 }
 
 /// Applies physics to `Physical` entities.
@@ -379,8 +381,9 @@ pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
-        WriteStorage<'s, Bounded>,
+        ReadStorage<'s, Bounded>,
         ReadStorage<'s, Transform>,
+        ReadStorage<'s, Collider>,
         WriteExpect<'s, Game>,
         WriteStorage<'s, UiText>,
         WriteExpect<'s, Score>,
@@ -397,8 +400,9 @@ impl<'s> System<'s> for CollisionSystem {
         use std::collections::HashSet;
 
         let (
-            mut bounding_volumes,
+            bounding_volumes,
             locals,
+            colliders,
             mut game,
             mut text,
             mut score,
@@ -416,10 +420,10 @@ impl<'s> System<'s> for CollisionSystem {
         let mut deferred = HashSet::new();
         let mut seen = HashSet::new();
 
-        for (local, bounding_volume) in (&locals, &bounding_volumes).join() {
-            let _ = bounding_volume.apply_to_broad_phase(local, &mut broad_phase);
+        for (local, collider, bounding_volume) in (&locals, &colliders, &bounding_volumes).join() {
+            let _ = bounding_volume.apply_to_broad_phase(local, *collider, &mut broad_phase);
 
-            if let Collider::DeferredAsteroid(e) = bounding_volume.collider {
+            if let Collider::DeferredAsteroid(e) = *collider {
                 deferred.insert(e);
             }
         }
@@ -514,9 +518,7 @@ impl<'s> System<'s> for CollisionSystem {
         // undefer deferred
         for e in deferred {
             if !seen.contains(&e) {
-                if let Some(volume) = bounding_volumes.get_mut(e) {
-                    volume.collider = Collider::Asteroid(e);
-                }
+                lazy.insert(e, Collider::Asteroid(e));
             }
         }
 
@@ -526,7 +528,7 @@ impl<'s> System<'s> for CollisionSystem {
 
         fn asteroid_data(
             e: Entity,
-            bounding_volumes: &WriteStorage<Bounded>,
+            bounding_volumes: &ReadStorage<Bounded>,
             locals: &ReadStorage<Transform>,
         ) -> Option<(Transform, f32)> {
             use std::f32::consts;
