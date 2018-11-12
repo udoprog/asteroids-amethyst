@@ -234,7 +234,7 @@ impl<'s> System<'s> for RandomAsteroidSystem {
             let velocity = Vector2::new(r(), r());
 
             spawn_asteroid(
-                entities.create(),
+                &entities,
                 &lazy,
                 &rand,
                 &asteroid_resource,
@@ -242,6 +242,7 @@ impl<'s> System<'s> for RandomAsteroidSystem {
                 scale,
                 velocity,
                 self.max_rotation,
+                false,
             );
 
             self.time_to_spawn = rand.next_f32() * self.average_spawn_time;
@@ -250,7 +251,7 @@ impl<'s> System<'s> for RandomAsteroidSystem {
 }
 
 fn spawn_asteroid(
-    e: Entity,
+    entities: &Entities,
     lazy: &Read<LazyUpdate>,
     rand: &ReadExpect<RandomGen>,
     asteroid_resource: &ReadExpect<AsteroidResource>,
@@ -258,6 +259,7 @@ fn spawn_asteroid(
     scale: f32,
     velocity: Vector2<f32>,
     max_rotation: f32,
+    defer_adding_bounds: bool,
 ) {
     *local.scale_mut() = Vector3::new(scale, scale, 1.0f32);
 
@@ -265,11 +267,20 @@ fn spawn_asteroid(
     physical.velocity = velocity;
     physical.rotation = max_rotation * rand.next_f32();
 
+    let e = entities.create();
+
     lazy.insert(e, local);
     lazy.insert(e, physical);
     lazy.insert(e, ConstrainedObject);
     lazy.insert(e, asteroid_resource.new_sprite_render(rand));
-    lazy.insert(e, asteroid_resource.create_bounding_volume(e, scale));
+
+    let bounding_volume = if defer_adding_bounds {
+        asteroid_resource.create_bounding_volume(e, scale, Collider::DeferredAsteroid)
+    } else {
+        asteroid_resource.create_bounding_volume(e, scale, Collider::Asteroid)
+    };
+
+    lazy.insert(e, bounding_volume);
 }
 
 /// Applies physics to `Physical` entities.
@@ -308,7 +319,7 @@ pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
-        ReadStorage<'s, BoundingVolume>,
+        WriteStorage<'s, BoundingVolume>,
         ReadStorage<'s, Transform>,
         WriteExpect<'s, GameResource>,
         WriteStorage<'s, UiText>,
@@ -320,8 +331,10 @@ impl<'s> System<'s> for CollisionSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
+        use std::collections::HashSet;
+
         let (
-            bounding_volumes,
+            mut bounding_volumes,
             locals,
             mut game,
             mut text,
@@ -334,11 +347,15 @@ impl<'s> System<'s> for CollisionSystem {
 
         let mut broad_phase = DBVTBroadPhase::new(0f32);
 
-        let mut tests = Vec::new();
+        let mut deferred = HashSet::new();
+        let mut seen = HashSet::new();
 
         for (local, bounding_volume) in (&locals, &bounding_volumes).join() {
-            let vol = bounding_volume.apply_to_broad_phase(local, &mut broad_phase);
-            tests.push((vol, bounding_volume.collider));
+            let _ = bounding_volume.apply_to_broad_phase(local, &mut broad_phase);
+
+            if let Collider::DeferredAsteroid(e) = bounding_volume.collider {
+                deferred.insert(e);
+            }
         }
 
         let mut spawned = 0;
@@ -347,6 +364,11 @@ impl<'s> System<'s> for CollisionSystem {
             use self::Collider::*;
 
             match (*a, *b) {
+                (DeferredAsteroid(a), DeferredAsteroid(b)) => {
+                    seen.insert(a);
+                    seen.insert(b);
+                    return;
+                }
                 (Bullet(_), Ship(_)) | (Ship(_), Bullet(_)) => {
                     return;
                 }
@@ -405,13 +427,22 @@ impl<'s> System<'s> for CollisionSystem {
             }
         });
 
+        // undefer deferred
+        for e in deferred {
+            if !seen.contains(&e) {
+                if let Some(volume) = bounding_volumes.get_mut(e) {
+                    volume.collider = Collider::Asteroid(e);
+                }
+            }
+        }
+
         if spawned > 0 {
             trace!("SPAWNED: {}", spawned);
         }
 
         fn asteroid_data(
             e: Entity,
-            bounding_volumes: &ReadStorage<BoundingVolume>,
+            bounding_volumes: &WriteStorage<BoundingVolume>,
             locals: &ReadStorage<Transform>,
         ) -> Option<(Transform, f32)> {
             use std::f32::consts;
@@ -454,24 +485,19 @@ impl<'s> System<'s> for CollisionSystem {
                 angle += rand.next_f32() * consts::PI;
 
                 let rotation = UnitQuaternion::from_axis_angle(&Vector3::z_axis(), angle);
-
-                let offset = rotation * Vector3::x() * (10.0 + rand.next_f32() * 2.0);
-
                 let velocity = rotation * Vector3::x() * 100.0 * rand.next_f32();
                 let velocity = Vector2::new(velocity.x, velocity.y);
 
-                let mut local = local.clone();
-                *local.translation_mut() += offset;
-
                 spawn_asteroid(
-                    entities.create(),
+                    entities,
                     lazy,
                     rand,
                     asteroids_resource,
-                    local,
+                    local.clone(),
                     1.0,
                     velocity,
                     0.10,
+                    true,
                 );
             }
 

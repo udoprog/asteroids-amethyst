@@ -162,8 +162,10 @@ impl AsteroidResource {
         }
     }
 
-    pub fn create_bounding_volume(&self, entity: Entity, scale: f32) -> BoundingVolume {
-        BoundingVolume::from_local(entity, Self::MIN_RADIUS * scale, Collider::Asteroid)
+    pub fn create_bounding_volume(
+        &self, entity: Entity, scale: f32, collider: impl Fn(Entity) -> Collider
+    ) -> BoundingVolume {
+        BoundingVolume::from_local(entity, Self::MIN_RADIUS * scale, collider)
     }
 }
 
@@ -192,6 +194,9 @@ pub enum Collider {
     Bullet(Entity),
     Ship(Entity),
     Asteroid(Entity),
+    /// Asteroid can collide, but will not register collissions until it's gone one frame without
+    /// collisions.
+    DeferredAsteroid(Entity),
 }
 
 impl Collider {
@@ -203,6 +208,7 @@ impl Collider {
             Bullet(e) => e,
             Ship(e) => e,
             Asteroid(e) => e,
+            DeferredAsteroid(e) => e,
         }
     }
 }

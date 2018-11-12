@@ -16,3 +16,8 @@ After that, just do:
 ```
 cargo +nightly run
 ```
+
+## TODO
+
+ * Add sounds.
+ * Actually do momentum distribution when asteroids collide!

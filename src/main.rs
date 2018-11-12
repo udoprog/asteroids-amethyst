@@ -97,7 +97,7 @@ impl Component for Physical {
     type Storage = DenseVecStorage<Self>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoundingVolume {
     /// Bounding volume of the entity.
     pub shape: Ball<f32>,
