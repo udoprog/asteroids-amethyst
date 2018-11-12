@@ -1,0 +1,72 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
+<project xmlns="http://audacity.sourceforge.net/xml/" projname="sfx_data" version="1.3.0" audacityversion="2.3.0" sel0="7.6408163265" sel1="13.7012244898" vpos="0" h="2.6949659864" zoom="43.0664062500" rate="44100.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+	<tags/>
+	<wavetrack name="Audio Track" channel="2" linked="0" mute="0" solo="0" height="150" minimized="0" isSelected="0" rate="44100" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="0.00000000" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="273155">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f6db.au" len="262144" min="-0.265476" max="0.265463" rms="0.043099"/>
+				</waveblock>
+				<waveblock start="262144">
+					<simpleblockfile filename="eff1f67c.au" len="11011" min="-0.007356" max="0.004102" rms="0.002232"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" channel="2" linked="0" mute="0" solo="0" height="150" minimized="0" isSelected="1" rate="44100" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="5.99074830" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="548825">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f937.au" len="262144" min="-0.127777" max="0.120336" rms="0.009634"/>
+				</waveblock>
+				<waveblock start="262144">
+					<simpleblockfile filename="eff1f30c.au" len="262144" min="-0.152828" max="0.163379" rms="0.010422"/>
+				</waveblock>
+				<waveblock start="524288">
+					<simpleblockfile filename="eff1fd8d.au" len="24537" min="-0.00369" max="0.004369" rms="0.001166"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="1">
+				<controlpoint t="0.952675736961" val="1.000000000000"/>
+			</envelope>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" channel="2" linked="0" mute="0" solo="0" height="150" minimized="0" isSelected="0" rate="44100" gain="1.0" pan="0.0" colorindex="0">
+		<waveclip offset="18.57596372" colorindex="0">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="1005071">
+				<waveblock start="0">
+					<simpleblockfile filename="eff1f4a6.au" len="262144" min="-0.350626" max="0.446631" rms="0.030105"/>
+				</waveblock>
+				<waveblock start="262144">
+					<simpleblockfile filename="eff1f6d9.au" len="262144" min="-0.500004" max="0.500011" rms="0.036952"/>
+				</waveblock>
+				<waveblock start="524288">
+					<simpleblockfile filename="eff1ff50.au" len="262144" min="-0.500012" max="0.500018" rms="0.038421"/>
+				</waveblock>
+				<waveblock start="786432">
+					<simpleblockfile filename="eff1f16c.au" len="218639" min="-0.61997" max="0.706284" rms="0.045059"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<labeltrack name="Label Track" numlabels="15" height="73" minimized="0" isSelected="0">
+		<label t="4.0729251701" t1="4.1875736961" title="pew1"/>
+		<label t="4.1962811791" t1="4.2652154195" title="pew2"/>
+		<label t="4.2978684807" t1="4.3827664399" title="pew3"/>
+		<label t="4.4103401361" t1="4.4872562358" title="pew4"/>
+		<label t="4.5082993197" t1="4.5982766440" title="pew5"/>
+		<label t="7.9201814059" t1="8.1422222222" title="collision1"/>
+		<label t="8.8380952381" t1="9.0804535147" title="collision2"/>
+		<label t="9.9366893424" t1="10.1297052154" title="collision3"/>
+		<label t="11.0164172336" t1="11.2282993197" title="collision4"/>
+		<label t="12.1034013605" t1="12.3109297052" title="collision5"/>
+		<label t="22.6946031746" t1="23.3026757370" title="explosion1"/>
+		<label t="23.4594104308" t1="24.0515192744" title="explosion2"/>
+		<label t="24.2692063492" t1="24.7887528345" title="explosion3"/>
+		<label t="25.0819047619" t1="26.0324716553" title="explosion4"/>
+		<label t="38.6292970522" t1="39.4390929705" title="explosion5"/>
+	</labeltrack>
+</project>

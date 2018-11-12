@@ -1,5 +1,6 @@
 use self::resources::Collider;
 use amethyst::{
+    audio::AudioBundle,
     core::{
         frame_limiter::FrameRateLimitStrategy,
         nalgebra::{self, Isometry2, Vector2},
@@ -18,6 +19,7 @@ use ncollide2d::{
     shape::Ball,
 };
 
+mod audio;
 mod asteroids;
 mod bundle;
 mod resources;
@@ -31,7 +33,10 @@ const ARENA_WIDTH: f32 = 300.0;
 fn main() -> amethyst::Result<()> {
     // amethyst::start_logger(Default::default());
 
-    use crate::asteroids::Asteroids;
+    use crate::{
+        audio::Silent,
+        asteroids::Asteroids,
+    };
 
     let app_root = application_root_dir();
 
@@ -61,6 +66,7 @@ fn main() -> amethyst::Result<()> {
         )?.with_bundle(self::bundle::MainBundle)?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_bundle(TransformBundle::new().with_dep(&["physics_system"]))?
+        .with_bundle(AudioBundle::new(|_: &mut Silent| None))?
         .with_bundle(UiBundle::<String, String>::new())?;
 
     let mut game = Application::build(assets_dir, Asteroids)?
@@ -154,7 +160,7 @@ impl Default for Ship {
             acceleration: 80f32,
             rotation: 180f32,
             reload_timer: 0f32,
-            time_to_reload: 0.05f32,
+            time_to_reload: 0.1f32,
             bullet_velocity: 150f32,
             bullet_jitter: 2.0f32,
         }

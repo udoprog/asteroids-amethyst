@@ -9,6 +9,7 @@ use amethyst::{
 
 use crate::{
     resources::{AsteroidResource, BulletResource, GameResource, RandomGen, Score, ShipResource},
+    audio::initialise_audio,
     BoundingVolume, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
 };
 
@@ -29,6 +30,7 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
         // Setup our game.
         initialise_ship(world);
         initialise_camera(world);
+        initialise_audio(world);
     }
 
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {

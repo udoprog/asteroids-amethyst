@@ -1,4 +1,5 @@
 use amethyst::{
+    assets::AssetStorage,
     core::{
         nalgebra::{UnitQuaternion, Vector2, Vector3},
         timing::Time,
@@ -8,12 +9,17 @@ use amethyst::{
         prelude::{Entities, Entity, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage},
         ReadExpect, WriteExpect,
     },
+    audio::{
+        output::Output,
+        Source,
+    },
     input::InputHandler,
     ui::UiText,
 };
 use crate::{
     resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
     BoundingVolume, Bullet, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
+    audio::Sounds,
 };
 use log::{error, trace};
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
@@ -34,13 +40,24 @@ impl<'s> System<'s> for ShipInputSystem {
         Read<'s, InputHandler<String, String>>,
         ReadExpect<'s, BulletResource>,
         ReadExpect<'s, RandomGen>,
+        ReadExpect<'s, Sounds>,
+        Read<'s, AssetStorage<Source>>,
+        Option<Read<'s, Output>>,
         Entities<'s>,
         Read<'s, LazyUpdate>,
     );
 
     fn run(&mut self, system: Self::SystemData) {
-        let (mut ships, mut physicals, locals, time, input, bullet_resource, rand, entities, lazy) =
-            system;
+        let (
+            mut ships,
+            mut physicals,
+            locals, time, input, bullet_resource, rand,
+            sounds,
+            audio_storage,
+            audio,
+            entities,
+            lazy,
+        ) = system;
 
         let time_delta = time.delta_seconds();
 
@@ -104,6 +121,10 @@ impl<'s> System<'s> for ShipInputSystem {
                     ship.reload_timer = 0.0f32;
                 }
             }
+        }
+
+        if !new_bullets.is_empty() {
+            sounds.pew_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
         }
 
         for new_bullet in new_bullets {
@@ -327,6 +348,9 @@ impl<'s> System<'s> for CollisionSystem {
         Read<'s, LazyUpdate>,
         ReadExpect<'s, AsteroidResource>,
         ReadExpect<'s, RandomGen>,
+        ReadExpect<'s, Sounds>,
+        Read<'s, AssetStorage<Source>>,
+        Option<Read<'s, Output>>,
         Entities<'s>,
     );
 
@@ -342,6 +366,9 @@ impl<'s> System<'s> for CollisionSystem {
             lazy,
             asteroids_resource,
             rand,
+            sounds,
+            audio_storage,
+            audio,
             entities,
         ) = data;
 
@@ -363,6 +390,14 @@ impl<'s> System<'s> for CollisionSystem {
         broad_phase.update(&mut |a, b| a != b, &mut |a, b, _| {
             use self::Collider::*;
 
+            // play the appropriate sound.
+            match (*a, *b) {
+                (Asteroid(_), _) | (_, Asteroid(_)) => {
+                    sounds.collision_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
+                }
+                _ => {}
+            }
+
             match (*a, *b) {
                 (DeferredAsteroid(a), DeferredAsteroid(b)) => {
                     seen.insert(a);
@@ -373,9 +408,12 @@ impl<'s> System<'s> for CollisionSystem {
                     return;
                 }
                 (Ship(_), _) | (_, Ship(_)) => {
-                    game.player_is_dead = true;
+                    return;
+                    // game.player_is_dead = true;
                 }
                 (Bullet(_), Asteroid(a)) | (Asteroid(a), Bullet(_)) => {
+                    sounds.explosion_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
+
                     score.asteroids += 1;
 
                     if let Some(text) = text.get_mut(score.score_text) {

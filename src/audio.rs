@@ -3,61 +3,94 @@ use amethyst::{
     audio::{output::Output, AudioSink, OggFormat, Source, SourceHandle},
     ecs::prelude::World,
 };
-use std::iter::Cycle;
-use std::vec::IntoIter;
+use crate::resources::RandomGen;
+
+pub struct Silent;
 
 pub struct Sounds {
-    pub score_sfx: SourceHandle,
-    pub bounce_sfx: SourceHandle,
+    pub pew_sfx: RandomSfx,
+    pub collision_sfx: RandomSfx,
+    pub explosion_sfx: RandomSfx,
 }
 
-pub struct Music {
-    pub music: Cycle<IntoIter<SourceHandle>>,
+pub struct RandomSfx {
+    pub sources: Vec<SourceHandle>,
 }
 
-/// Loads an ogg audio track.
-fn load_audio_track(loader: &Loader, world: &World, file: &str) -> SourceHandle {
-    loader.load(file, OggFormat, (), (), &world.read_resource())
-}
-
-/// Initialise audio in the world. This includes the background track and the
-/// sound effects.
-pub fn initialise_audio(world: &mut World) {
-    use crate::{AUDIO_BOUNCE, AUDIO_MUSIC, AUDIO_SCORE};
-
-    let (sound_effects, music) = {
+impl RandomSfx {
+    pub fn load<'a>(world: &mut World, it: impl IntoIterator<Item = &'a str>) -> RandomSfx {
         let loader = world.read_resource::<Loader>();
 
-        let mut sink = world.write_resource::<AudioSink>();
-        sink.set_volume(0.25); // Music is a bit loud, reduce the volume.
+        let mut sources = Vec::new();
 
-        let music = AUDIO_MUSIC
-            .iter()
-            .map(|file| load_audio_track(&loader, &world, file))
-            .collect::<Vec<_>>()
-            .into_iter()
-            .cycle();
-        let music = Music { music };
+        for p in it {
+            sources.push(load_wav(&loader, &world, p));
+        }
 
-        let sound = Sounds {
-            bounce_sfx: load_audio_track(&loader, &world, AUDIO_BOUNCE),
-            score_sfx: load_audio_track(&loader, &world, AUDIO_SCORE),
+        RandomSfx {
+            sources,
+        }
+    }
+
+    /// Play a sound at random.
+    pub fn play(&self, rand: &RandomGen, storage: &AssetStorage<Source>, output: Option<&Output>) {
+        let output = match output.as_ref() {
+            Some(output) => output,
+            None => return,
         };
 
-        (sound, music)
-    };
+        let index = rand.next_usize() % self.sources.len();
 
-    // Add sound effects to the world. We have to do this in another scope because
-    // world won't let us insert new resources as long as `Loader` is borrowed.
-    world.add_resource(sound_effects);
-    world.add_resource(music);
-}
-
-#[allow(unused)]
-pub fn play_bounce(sounds: &Sounds, storage: &AssetStorage<Source>, output: Option<&Output>) {
-    if let Some(ref output) = output.as_ref() {
-        if let Some(sound) = storage.get(&sounds.bounce_sfx) {
+        if let Some(sound) = self.sources.get(index).and_then(|s| storage.get(s)) {
             output.play_once(sound, 1.0);
         }
     }
+}
+
+fn load_wav(loader: &Loader, world: &World, file: &str) -> SourceHandle {
+    loader.load(file, OggFormat, (), (), &world.read_resource())
+}
+
+#[allow(unused)]
+fn load_ogg(loader: &Loader, world: &World, file: &str) -> SourceHandle {
+    loader.load(file, OggFormat, (), (), &world.read_resource())
+}
+
+pub fn initialise_audio(world: &mut World) {
+    {
+        let mut sink = world.write_resource::<AudioSink>();
+        sink.set_volume(0.1);
+    }
+
+    let pew_sfx = RandomSfx::load(world, vec![
+        "audio/pew1.wav",
+        "audio/pew2.wav",
+        "audio/pew3.wav",
+        "audio/pew4.wav",
+        "audio/pew5.wav",
+    ]);
+
+    let collision_sfx = RandomSfx::load(world, vec![
+        "audio/collision1.wav",
+        "audio/collision2.wav",
+        "audio/collision3.wav",
+        "audio/collision4.wav",
+        "audio/collision5.wav",
+    ]);
+
+    let explosion_sfx = RandomSfx::load(world, vec![
+        "audio/explosion1.wav",
+        "audio/explosion2.wav",
+        "audio/explosion3.wav",
+        "audio/explosion4.wav",
+        "audio/explosion5.wav",
+    ]);
+
+    world.add_resource(Sounds {
+        pew_sfx,
+        collision_sfx,
+        explosion_sfx,
+    });
+
+    world.add_resource(Silent);
 }
