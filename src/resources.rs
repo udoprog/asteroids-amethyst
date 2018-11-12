@@ -3,10 +3,7 @@ use amethyst::{
     renderer::SpriteRender,
 };
 
-use crate::{
-    textures::SpriteSheet,
-    BoundingVolume,
-};
+use crate::{components::BoundingVolume, textures::SpriteSheet};
 
 pub struct ShipResource {
     pub sprite_sheet: SpriteSheet,
@@ -65,7 +62,10 @@ impl AsteroidResource {
     }
 
     pub fn create_bounding_volume(
-        &self, entity: Entity, scale: f32, collider: impl Fn(Entity) -> Collider
+        &self,
+        entity: Entity,
+        scale: f32,
+        collider: impl Fn(Entity) -> Collider,
     ) -> BoundingVolume {
         BoundingVolume::from_local(entity, Self::MIN_RADIUS * scale, collider)
     }

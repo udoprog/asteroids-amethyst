@@ -2,9 +2,8 @@ use amethyst::{
     assets::{AssetStorage, Loader},
     ecs::World,
     renderer::{
-        self,
-        MaterialTextureSet, PngFormat, SpriteRender, SpriteSheetFormat,
-        SpriteSheetHandle, Texture, TextureMetadata,
+        self, MaterialTextureSet, PngFormat, SpriteRender, SpriteSheetFormat, SpriteSheetHandle,
+        Texture, TextureMetadata,
     },
 };
 
@@ -48,9 +47,7 @@ impl SpriteSheet {
             handle
         };
 
-        SpriteSheet {
-            handle,
-        }
+        SpriteSheet { handle }
     }
 
     /// Construct a render handle for the given sprite in the sprite sheet.

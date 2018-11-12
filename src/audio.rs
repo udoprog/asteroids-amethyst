@@ -27,9 +27,7 @@ impl RandomSfx {
             sources.push(load_wav(&loader, &world, p));
         }
 
-        RandomSfx {
-            sources,
-        }
+        RandomSfx { sources }
     }
 
     /// Play a sound at random.
@@ -62,29 +60,38 @@ pub fn initialise_audio(world: &mut World) {
         sink.set_volume(0.1);
     }
 
-    let pew_sfx = RandomSfx::load(world, vec![
-        "audio/pew1.wav",
-        "audio/pew2.wav",
-        "audio/pew3.wav",
-        "audio/pew4.wav",
-        "audio/pew5.wav",
-    ]);
+    let pew_sfx = RandomSfx::load(
+        world,
+        vec![
+            "audio/pew1.wav",
+            "audio/pew2.wav",
+            "audio/pew3.wav",
+            "audio/pew4.wav",
+            "audio/pew5.wav",
+        ],
+    );
 
-    let collision_sfx = RandomSfx::load(world, vec![
-        "audio/collision1.wav",
-        "audio/collision2.wav",
-        "audio/collision3.wav",
-        "audio/collision4.wav",
-        "audio/collision5.wav",
-    ]);
+    let collision_sfx = RandomSfx::load(
+        world,
+        vec![
+            "audio/collision1.wav",
+            "audio/collision2.wav",
+            "audio/collision3.wav",
+            "audio/collision4.wav",
+            "audio/collision5.wav",
+        ],
+    );
 
-    let explosion_sfx = RandomSfx::load(world, vec![
-        "audio/explosion1.wav",
-        "audio/explosion2.wav",
-        "audio/explosion3.wav",
-        "audio/explosion4.wav",
-        "audio/explosion5.wav",
-    ]);
+    let explosion_sfx = RandomSfx::load(
+        world,
+        vec![
+            "audio/explosion1.wav",
+            "audio/explosion2.wav",
+            "audio/explosion3.wav",
+            "audio/explosion4.wav",
+            "audio/explosion5.wav",
+        ],
+    );
 
     world.add_resource(Sounds {
         pew_sfx,

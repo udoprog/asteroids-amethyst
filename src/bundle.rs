@@ -3,8 +3,8 @@ use amethyst::{
     ecs::prelude::DispatcherBuilder,
 };
 use crate::systems::{
-    CollisionSystem, KillBulletsSystem, LimitObjectsSystem, PhysicsSystem, RandomAsteroidSystem,
-    ShipInputSystem, GlobalInputSystem, HandleUiSystem,
+    CollisionSystem, GlobalInputSystem, HandleUiSystem, KillBulletsSystem, LimitObjectsSystem,
+    PhysicsSystem, RandomAsteroidSystem, ShipInputSystem,
 };
 
 pub struct MainBundle;

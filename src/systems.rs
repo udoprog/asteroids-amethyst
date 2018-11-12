@@ -1,5 +1,6 @@
 use amethyst::{
     assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{
         nalgebra::{UnitQuaternion, Vector2, Vector3},
         timing::Time,
@@ -9,17 +10,14 @@ use amethyst::{
         prelude::{Entities, Entity, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage},
         ReadExpect, WriteExpect,
     },
-    audio::{
-        output::Output,
-        Source,
-    },
     input::InputHandler,
     ui::UiText,
 };
 use crate::{
-    resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
-    BoundingVolume, Bullet, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
     audio::Sounds,
+    components::{BoundingVolume, Bullet, ConstrainedObject, Physical, Ship},
+    resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
+    ARENA_HEIGHT, ARENA_WIDTH,
 };
 use log::{error, trace};
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
@@ -86,7 +84,11 @@ impl<'s> System<'s> for ShipInputSystem {
         let (
             mut ships,
             mut physicals,
-            locals, time, input, bullet_resource, rand,
+            locals,
+            time,
+            input,
+            bullet_resource,
+            rand,
             sounds,
             audio_storage,
             audio,
@@ -159,7 +161,9 @@ impl<'s> System<'s> for ShipInputSystem {
         }
 
         if !new_bullets.is_empty() {
-            sounds.pew_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
+            sounds
+                .pew_sfx
+                .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
         }
 
         for new_bullet in new_bullets {
@@ -428,7 +432,9 @@ impl<'s> System<'s> for CollisionSystem {
             // play the appropriate sound.
             match (*a, *b) {
                 (Asteroid(_), _) | (_, Asteroid(_)) => {
-                    sounds.collision_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
+                    sounds
+                        .collision_sfx
+                        .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
                 }
                 _ => {}
             }
@@ -450,7 +456,9 @@ impl<'s> System<'s> for CollisionSystem {
                     game.modifiers.player_is_dead = true;
                 }
                 (Bullet(_), Asteroid(a)) | (Asteroid(a), Bullet(_)) => {
-                    sounds.explosion_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
+                    sounds
+                        .explosion_sfx
+                        .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
 
                     score.asteroids += 1;
 

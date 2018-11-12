@@ -8,9 +8,10 @@ use amethyst::{
 };
 
 use crate::{
-    resources::{AsteroidResource, BulletResource, GameResource, RandomGen, Score, ShipResource},
     audio::initialise_audio,
-    BoundingVolume, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
+    components::{BoundingVolume, ConstrainedObject, Physical, Ship},
+    resources::{AsteroidResource, BulletResource, GameResource, RandomGen, Score, ShipResource},
+    ARENA_HEIGHT, ARENA_WIDTH,
 };
 
 #[derive(Default)]
@@ -45,19 +46,15 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
 
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {
         let GameResource {
-            restart,
-            modifiers,
-            ..
+            restart, modifiers, ..
         } = *data.world.read_resource::<GameResource>();
 
         if restart {
             data.world.delete_all();
 
-            return Trans::Switch(Box::new(
-                Asteroids {
-                    player_is_immortal: self.player_is_immortal || modifiers.player_is_immortal,
-                }
-            ));
+            return Trans::Switch(Box::new(Asteroids {
+                player_is_immortal: self.player_is_immortal || modifiers.player_is_immortal,
+            }));
         }
 
         Trans::None
@@ -126,7 +123,12 @@ fn initialize_score(world: &mut World, game: &GameResource) {
     let score_transform = UiTransform::new(
         "Score".to_string(),
         Anchor::TopMiddle,
-        0., -50., 1., 200., 50., 0,
+        0.,
+        -50.,
+        1.,
+        200.,
+        50.,
+        0,
     );
 
     let score_text = world
@@ -142,7 +144,12 @@ fn initialize_score(world: &mut World, game: &GameResource) {
     let mods_transform = UiTransform::new(
         "Mods".to_string(),
         Anchor::TopRight,
-        -200., -50., 1., 200., 50., 0,
+        -200.,
+        -50.,
+        1.,
+        200.,
+        50.,
+        0,
     );
 
     let modifiers_text = world
@@ -151,7 +158,8 @@ fn initialize_score(world: &mut World, game: &GameResource) {
         .with(UiText::new(
             font.clone(),
             game.modifiers.as_text(),
-            [1.0, 0.0, 0.0, 1.0], 20.,
+            [1.0, 0.0, 0.0, 1.0],
+            20.,
         )).build();
 
     world.add_resource(Score {
