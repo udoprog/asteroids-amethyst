@@ -182,7 +182,7 @@ impl<'s> System<'s> for ShipInputSystem {
             lazy.insert(e, bullet_resource.new_sprite_render());
             lazy.insert(e, Bullet::new());
             lazy.insert(e, bullet_resource.new_bounded());
-            lazy.insert(e, Collider::Bullet);
+            lazy.insert(e, Collider::Deferred(Box::new(Collider::Bullet)));
         }
 
         struct NewBullet {
@@ -337,7 +337,7 @@ fn spawn_asteroid(
     lazy.insert(e, asteroid_resource.new_bounded(scale));
 
     let collider = if defer_adding_bounds {
-        Collider::DeferredAsteroid
+        Collider::Deferred(Box::new(Collider::Asteroid))
     } else {
         Collider::Asteroid
     };
@@ -397,7 +397,7 @@ impl<'s> System<'s> for CollisionSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use std::collections::HashSet;
+        use std::collections::HashMap;
 
         let (
             bounding_volumes,
@@ -417,14 +417,16 @@ impl<'s> System<'s> for CollisionSystem {
 
         let mut broad_phase = DBVTBroadPhase::new(0f32);
 
-        let mut deferred = HashSet::new();
-        let mut seen = HashSet::new();
+        let mut deferred = HashMap::new();
 
-        for (e, local, collider, bounding_volume) in (&entities, &locals, &colliders, &bounding_volumes).join() {
-            let _ = bounding_volume.apply_to_broad_phase(*collider, e, local, &mut broad_phase);
+        for (e, local, collider, bounding_volume) in
+            (&entities, &locals, &colliders, &bounding_volumes).join()
+        {
+            let _ =
+                bounding_volume.apply_to_broad_phase(collider.clone(), e, local, &mut broad_phase);
 
-            if let Collider::DeferredAsteroid = *collider {
-                deferred.insert(e);
+            if let Collider::Deferred(ref next) = *collider {
+                deferred.insert(e, next);
             }
         }
 
@@ -434,7 +436,7 @@ impl<'s> System<'s> for CollisionSystem {
             use self::Collider::*;
 
             // play the appropriate sound.
-            match (*a, *b) {
+            match (a, b) {
                 ((Asteroid, _), _) | (_, (Asteroid, _)) => {
                     sounds
                         .collision_sfx
@@ -443,13 +445,15 @@ impl<'s> System<'s> for CollisionSystem {
                 _ => {}
             }
 
-            match (*a, *b) {
-                ((DeferredAsteroid, a), (DeferredAsteroid, b)) => {
-                    seen.insert(a);
-                    seen.insert(b);
+            match (a, b) {
+                // check if deferred things are still intersecting.
+                ((Deferred(_), a), (Deferred(_), b)) => {
+                    deferred.remove(&a);
+                    deferred.remove(&b);
                     return;
                 }
-                ((Bullet, _), (Ship, _)) | ((Ship, _), (Bullet, _)) => {
+                ((Deferred(_), a), _) | (_, (Deferred(_), a)) => {
+                    deferred.remove(&a);
                     return;
                 }
                 ((Ship, _), _) | (_, (Ship, _)) => {
@@ -471,7 +475,7 @@ impl<'s> System<'s> for CollisionSystem {
                     }
 
                     // explode into smaller asteroids.
-                    if let Some((local, volume)) = asteroid_data(a, &bounding_volumes, &locals) {
+                    if let Some((local, volume)) = asteroid_data(*a, &bounding_volumes, &locals) {
                         spawned += spawn_asteroid_cluster(
                             local,
                             volume,
@@ -485,8 +489,8 @@ impl<'s> System<'s> for CollisionSystem {
                 // this one is _interesting_, cause now we get to break up asteroids if they are
                 // big enough!
                 ((Asteroid, a), (Asteroid, b)) => {
-                    let a = asteroid_data(a, &bounding_volumes, &locals);
-                    let b = asteroid_data(b, &bounding_volumes, &locals);
+                    let a = asteroid_data(*a, &bounding_volumes, &locals);
+                    let b = asteroid_data(*b, &bounding_volumes, &locals);
 
                     if let (Some(a), Some(b)) = (a, b) {
                         let mut local = Transform::default();
@@ -516,10 +520,8 @@ impl<'s> System<'s> for CollisionSystem {
         });
 
         // undefer deferred
-        for e in deferred {
-            if !seen.contains(&e) {
-                lazy.insert(e, Collider::Asteroid);
-            }
+        for (e, next) in deferred {
+            lazy.insert(e, *next.clone());
         }
 
         if spawned > 0 {

@@ -127,14 +127,16 @@ impl Component for ConstrainedObject {
     type Storage = NullStorage<Self>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Collider {
     Bullet,
     Ship,
     Asteroid,
-    /// Asteroid can collide, but will not register collissions until it's gone one frame without
-    /// collisions.
-    DeferredAsteroid,
+    /// Certain things start spawned while intersecting with other things.
+    ///
+    /// To avoid causing additional collisions, this defers adding a collider until it is no longer
+    /// intersecting with other Deferreds.
+    Deferred(Box<Collider>),
 }
 
 impl Component for Collider {
