@@ -456,14 +456,8 @@ impl<'s> System<'s> for CollisionSystem {
                     deferred.remove(&a);
                     return;
                 }
-                ((Ship, _), _) | (_, (Ship, _)) => {
-                    if game.modifiers.player_is_immortal {
-                        return;
-                    }
-
-                    game.modifiers.player_is_dead = true;
-                }
-                ((Bullet, _), (Asteroid, a)) | ((Asteroid, a), (Bullet, _)) => {
+                // we get a point!
+                ((Bullet, _), (Asteroid, _)) | ((Asteroid, _), (Bullet, _)) => {
                     sounds
                         .explosion_sfx
                         .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
@@ -473,49 +467,55 @@ impl<'s> System<'s> for CollisionSystem {
                     if let Some(text) = text.get_mut(score.score_text) {
                         text.text = score.asteroids.to_string();
                     }
-
-                    // explode into smaller asteroids.
-                    if let Some((local, volume)) = asteroid_data(*a, &bounding_volumes, &locals) {
-                        spawned += spawn_asteroid_cluster(
-                            local,
-                            volume,
-                            &entities,
-                            &lazy,
-                            &asteroids_resource,
-                            &rand,
-                        );
-                    }
-                }
-                // this one is _interesting_, cause now we get to break up asteroids if they are
-                // big enough!
-                ((Asteroid, a), (Asteroid, b)) => {
-                    let a = asteroid_data(*a, &bounding_volumes, &locals);
-                    let b = asteroid_data(*b, &bounding_volumes, &locals);
-
-                    if let (Some(a), Some(b)) = (a, b) {
-                        let mut local = Transform::default();
-                        *local.translation_mut() = (a.0.translation() + b.0.translation()) / 2.0;
-                        let volume = a.1 + b.1;
-
-                        spawned += spawn_asteroid_cluster(
-                            local,
-                            volume,
-                            &entities,
-                            &lazy,
-                            &asteroids_resource,
-                            &rand,
-                        );
-                    }
                 }
                 _ => {}
             }
 
-            if let Err(e) = entities.delete(a.1) {
-                error!("failed to delete entity: {:?}: {}", a, e);
-            }
+            for c in &[a, b] {
+                let mut asteroids = SmallVec::<[(Transform, f32); 2]>::new();
 
-            if let Err(e) = entities.delete(b.1) {
-                error!("failed to delete entity: {:?}: {}", b, e);
+                let e = match *c {
+                    (Collider::Ship, _) if game.modifiers.player_is_immortal => continue,
+                    (Collider::Ship, e) => {
+                        // we died!
+                        game.modifiers.player_is_dead = true;
+                        e
+                    }
+                    // an asteroid collided with something
+                    // this is interesting, since there is a chance that asteroids splinter!
+                    (Collider::Asteroid, e) => {
+                        asteroids.extend(asteroid_data(*e, &bounding_volumes, &locals));
+                        e
+                    }
+                    (_, e) => e,
+                };
+
+                if !asteroids.is_empty() {
+                    let mut volume = 0.0f32;
+                    let c = asteroids.len() as f32;
+
+                    let mut local = Transform::default();
+
+                    for (t, v) in asteroids {
+                        *local.translation_mut() += t.translation();
+                        volume += v;
+                    }
+
+                    *local.translation_mut() /= c;
+
+                    spawned += spawn_asteroid_cluster(
+                        local,
+                        volume,
+                        &entities,
+                        &lazy,
+                        &asteroids_resource,
+                        &rand,
+                    );
+                }
+
+                if let Err(e) = entities.delete(*e) {
+                    error!("failed to delete entity: {:?}: {}", a, e);
+                }
             }
         });
 
@@ -550,7 +550,7 @@ impl<'s> System<'s> for CollisionSystem {
 
         fn spawn_asteroid_cluster(
             local: Transform,
-            c: f32,
+            mut c: f32,
             entities: &Entities,
             lazy: &Read<LazyUpdate>,
             asteroids_resource: &ReadExpect<Asteroids>,
@@ -564,12 +564,12 @@ impl<'s> System<'s> for CollisionSystem {
 
             let mut count = 0;
 
-            if c < (min_area * 3.0) {
-                return count;
+            while c > min_area * 2.0 {
+                c -= min_area;
+                count += 1;
             }
 
-            for _ in 0..2 {
-                count += 1;
+            for _ in 0..count {
                 angle += rand.next_f32() * consts::PI;
 
                 let rotation = UnitQuaternion::from_axis_angle(&Vector3::z_axis(), angle);
@@ -594,6 +594,9 @@ impl<'s> System<'s> for CollisionSystem {
     }
 }
 
+/// Handle the user interface.
+///
+/// Modifies text on screen and such when their underlying state has been modified.
 pub struct HandleUiSystem;
 
 impl<'s> System<'s> for HandleUiSystem {

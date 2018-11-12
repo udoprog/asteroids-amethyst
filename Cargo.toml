@@ -13,3 +13,6 @@ rand = "0.5"
 ncollide2d = "0.17"
 shred = {version = "0.7", features = ["nightly"]}
 clap = "2.32"
+
+[features]
+sdl_controller = []
