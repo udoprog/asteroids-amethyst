@@ -3,7 +3,7 @@ use amethyst::{
     renderer::SpriteRender,
 };
 
-use crate::{components::BoundingVolume, textures::SpriteSheet};
+use crate::{components::Bounded, textures::SpriteSheet};
 
 pub struct ShipResource {
     pub sprite_sheet: SpriteSheet,
@@ -19,41 +19,41 @@ impl ShipResource {
         self.sprite_sheet.sprite_render(0)
     }
 
-    pub fn create_bounding_volume(&self, entity: Entity) -> BoundingVolume {
-        BoundingVolume::from_local(entity, 6.0, Collider::Ship)
+    pub fn new_bounded(&self, entity: Entity) -> Bounded {
+        Bounded::from_local(entity, 6.0, Collider::Ship)
     }
 }
 
-pub struct BulletResource {
+pub struct Bullets {
     pub sprite_sheet: SpriteSheet,
 }
 
-impl BulletResource {
+impl Bullets {
     pub fn initialize(world: &mut World) {
         let sprite_sheet = SpriteSheet::from_path(world, "texture/bullet");
-        world.add_resource(BulletResource { sprite_sheet });
+        world.add_resource(Bullets { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self) -> SpriteRender {
         self.sprite_sheet.sprite_render(0)
     }
 
-    pub fn create_bounding_volume(&self, entity: Entity) -> BoundingVolume {
-        BoundingVolume::from_local(entity, 2.0, Collider::Bullet)
+    pub fn new_bounded(&self, entity: Entity) -> Bounded {
+        Bounded::from_local(entity, 2.0, Collider::Bullet)
     }
 }
 
-pub struct AsteroidResource {
+pub struct Asteroids {
     pub sprite_sheet: SpriteSheet,
 }
 
-impl AsteroidResource {
+impl Asteroids {
     pub const MIN_RADIUS: f32 = 4.0;
     pub const NUM_SPRITES: usize = 3;
 
     pub fn initialize(world: &mut World) {
         let sprite_sheet = SpriteSheet::from_path(world, "texture/asteroids");
-        world.add_resource(AsteroidResource { sprite_sheet });
+        world.add_resource(Asteroids { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self, random_gen: &RandomGen) -> SpriteRender {
@@ -61,13 +61,13 @@ impl AsteroidResource {
         self.sprite_sheet.sprite_render(index)
     }
 
-    pub fn create_bounding_volume(
+    pub fn new_bounded(
         &self,
         entity: Entity,
         scale: f32,
         collider: impl Fn(Entity) -> Collider,
-    ) -> BoundingVolume {
-        BoundingVolume::from_local(entity, Self::MIN_RADIUS * scale, collider)
+    ) -> Bounded {
+        Bounded::from_local(entity, Self::MIN_RADIUS * scale, collider)
     }
 }
 
@@ -112,7 +112,7 @@ impl GameModifiers {
 }
 
 #[derive(Default)]
-pub struct GameResource {
+pub struct Game {
     /// Restart the game.
     pub restart: bool,
     /// Game modifiers in place.

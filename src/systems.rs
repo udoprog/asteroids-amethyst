@@ -15,8 +15,8 @@ use amethyst::{
 };
 use crate::{
     audio::Sounds,
-    components::{BoundingVolume, Bullet, ConstrainedObject, Physical, Ship},
-    resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
+    components::{Bounded, Bullet, ConstrainedObject, Physical, Ship},
+    resources::{Asteroids, Bullets, Collider, Game, RandomGen, Score},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
 use log::{error, trace};
@@ -31,7 +31,7 @@ pub struct GlobalInputSystem {
 impl<'s> System<'s> for GlobalInputSystem {
     type SystemData = (
         Read<'s, InputHandler<String, String>>,
-        WriteExpect<'s, GameResource>,
+        WriteExpect<'s, Game>,
     );
 
     fn run(&mut self, (input, mut game): Self::SystemData) {
@@ -71,7 +71,7 @@ impl<'s> System<'s> for ShipInputSystem {
         ReadStorage<'s, Transform>,
         Read<'s, Time>,
         Read<'s, InputHandler<String, String>>,
-        ReadExpect<'s, BulletResource>,
+        ReadExpect<'s, Bullets>,
         ReadExpect<'s, RandomGen>,
         ReadExpect<'s, Sounds>,
         Read<'s, AssetStorage<Source>>,
@@ -181,7 +181,7 @@ impl<'s> System<'s> for ShipInputSystem {
             lazy.insert(e, ConstrainedObject);
             lazy.insert(e, bullet_resource.new_sprite_render());
             lazy.insert(e, Bullet::new());
-            lazy.insert(e, bullet_resource.create_bounding_volume(e));
+            lazy.insert(e, bullet_resource.new_bounded(e));
         }
 
         struct NewBullet {
@@ -272,7 +272,7 @@ impl RandomAsteroidSystem {
 impl<'s> System<'s> for RandomAsteroidSystem {
     type SystemData = (
         Entities<'s>,
-        ReadExpect<'s, AsteroidResource>,
+        ReadExpect<'s, Asteroids>,
         ReadExpect<'s, RandomGen>,
         Read<'s, Time>,
         Read<'s, LazyUpdate>,
@@ -314,7 +314,7 @@ fn spawn_asteroid(
     entities: &Entities,
     lazy: &Read<LazyUpdate>,
     rand: &ReadExpect<RandomGen>,
-    asteroid_resource: &ReadExpect<AsteroidResource>,
+    asteroid_resource: &ReadExpect<Asteroids>,
     mut local: Transform,
     scale: f32,
     velocity: Vector2<f32>,
@@ -335,9 +335,9 @@ fn spawn_asteroid(
     lazy.insert(e, asteroid_resource.new_sprite_render(rand));
 
     let bounding_volume = if defer_adding_bounds {
-        asteroid_resource.create_bounding_volume(e, scale, Collider::DeferredAsteroid)
+        asteroid_resource.new_bounded(e, scale, Collider::DeferredAsteroid)
     } else {
-        asteroid_resource.create_bounding_volume(e, scale, Collider::Asteroid)
+        asteroid_resource.new_bounded(e, scale, Collider::Asteroid)
     };
 
     lazy.insert(e, bounding_volume);
@@ -379,13 +379,13 @@ pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
-        WriteStorage<'s, BoundingVolume>,
+        WriteStorage<'s, Bounded>,
         ReadStorage<'s, Transform>,
-        WriteExpect<'s, GameResource>,
+        WriteExpect<'s, Game>,
         WriteStorage<'s, UiText>,
         WriteExpect<'s, Score>,
         Read<'s, LazyUpdate>,
-        ReadExpect<'s, AsteroidResource>,
+        ReadExpect<'s, Asteroids>,
         ReadExpect<'s, RandomGen>,
         ReadExpect<'s, Sounds>,
         Read<'s, AssetStorage<Source>>,
@@ -526,7 +526,7 @@ impl<'s> System<'s> for CollisionSystem {
 
         fn asteroid_data(
             e: Entity,
-            bounding_volumes: &WriteStorage<BoundingVolume>,
+            bounding_volumes: &WriteStorage<Bounded>,
             locals: &ReadStorage<Transform>,
         ) -> Option<(Transform, f32)> {
             use std::f32::consts;
@@ -549,12 +549,12 @@ impl<'s> System<'s> for CollisionSystem {
             c: f32,
             entities: &Entities,
             lazy: &Read<LazyUpdate>,
-            asteroids_resource: &ReadExpect<AsteroidResource>,
+            asteroids_resource: &ReadExpect<Asteroids>,
             rand: &ReadExpect<RandomGen>,
         ) -> usize {
             use std::f32::consts;
 
-            let min_area = AsteroidResource::MIN_RADIUS.powf(2.0) * consts::PI;
+            let min_area = Asteroids::MIN_RADIUS.powf(2.0) * consts::PI;
 
             let mut angle = 0.0f32;
 
@@ -594,7 +594,7 @@ pub struct HandleUiSystem;
 
 impl<'s> System<'s> for HandleUiSystem {
     type SystemData = (
-        ReadExpect<'s, GameResource>,
+        ReadExpect<'s, Game>,
         WriteStorage<'s, UiText>,
         WriteExpect<'s, Score>,
     );

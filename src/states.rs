@@ -9,27 +9,27 @@ use amethyst::{
 
 use crate::{
     audio::initialise_audio,
-    components::{BoundingVolume, ConstrainedObject, Physical, Ship},
-    resources::{AsteroidResource, BulletResource, GameResource, RandomGen, Score, ShipResource},
+    components::{Bounded, ConstrainedObject, Physical, Ship},
+    resources::{Asteroids, Bullets, Game, RandomGen, Score, ShipResource},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
 
 #[derive(Default)]
-pub struct Asteroids {
+pub struct MainGameState {
     pub player_is_immortal: bool,
 }
 
-impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
+impl<'a, 'b> SimpleState<'a, 'b> for MainGameState {
     fn on_start(&mut self, data: StateData<GameData>) {
         let StateData { world, .. } = data;
 
         ShipResource::initialize(world);
-        BulletResource::initialize(world);
-        AsteroidResource::initialize(world);
+        Bullets::initialize(world);
+        Asteroids::initialize(world);
         world.add_resource(RandomGen);
 
         let game = {
-            let mut game = GameResource::default();
+            let mut game = Game::default();
             game.modifiers.player_is_immortal = self.player_is_immortal;
             game
         };
@@ -45,14 +45,14 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
     }
 
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {
-        let GameResource {
+        let Game {
             restart, modifiers, ..
-        } = *data.world.read_resource::<GameResource>();
+        } = *data.world.read_resource::<Game>();
 
         if restart {
             data.world.delete_all();
 
-            return Trans::Switch(Box::new(Asteroids {
+            return Trans::Switch(Box::new(MainGameState {
                 player_is_immortal: self.player_is_immortal || modifiers.player_is_immortal,
             }));
         }
@@ -98,11 +98,11 @@ fn initialise_ship(world: &mut World) {
 
     let bounding_volume = {
         let ship_resource = world.read_resource::<ShipResource>();
-        ship_resource.create_bounding_volume(entity)
+        ship_resource.new_bounded(entity)
     };
 
     world
-        .write_storage::<BoundingVolume>()
+        .write_storage::<Bounded>()
         .insert(entity, bounding_volume)
         .unwrap();
     world
@@ -111,7 +111,7 @@ fn initialise_ship(world: &mut World) {
         .unwrap();
 }
 
-fn initialize_score(world: &mut World, game: &GameResource) {
+fn initialize_score(world: &mut World, game: &Game) {
     let font = world.read_resource::<Loader>().load(
         "font/square.ttf",
         TtfFormat,

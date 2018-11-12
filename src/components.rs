@@ -37,14 +37,14 @@ impl Component for Physical {
 }
 
 #[derive(Debug, Clone)]
-pub struct BoundingVolume {
+pub struct Bounded {
     /// Bounding volume of the entity.
     pub shape: Ball<f32>,
     /// A registered collider.
     pub collider: Collider,
 }
 
-impl BoundingVolume {
+impl Bounded {
     pub fn new(shape: Ball<f32>, collider: Collider) -> Self {
         Self { shape, collider }
     }
@@ -52,7 +52,7 @@ impl BoundingVolume {
     pub fn from_local(entity: Entity, size: f32, collider: impl Fn(Entity) -> Collider) -> Self {
         let ball = Ball::new(size);
         let c = collider(entity);
-        BoundingVolume::new(ball, c)
+        Bounded::new(ball, c)
     }
 
     /// Apply this bounding volume to a broad phase.
@@ -68,7 +68,7 @@ impl BoundingVolume {
     }
 }
 
-impl Component for BoundingVolume {
+impl Component for Bounded {
     type Storage = DenseVecStorage<Self>;
 }
 

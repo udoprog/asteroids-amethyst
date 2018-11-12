@@ -7,11 +7,11 @@ use amethyst::{
     utils::application_root_dir,
 };
 
-mod asteroids;
 mod audio;
 mod bundle;
 mod components;
 mod resources;
+mod states;
 mod systems;
 mod textures;
 
@@ -36,14 +36,14 @@ fn opts() -> App<'static, 'static> {
 
 fn main() -> amethyst::Result<()> {
     use amethyst::prelude::{Application, Config, GameDataBuilder};
-    use crate::{asteroids::Asteroids, audio::Silent};
+    use crate::{audio::Silent, states::MainGameState};
 
     amethyst::start_logger(Default::default());
 
     let app = opts();
     let matches = app.get_matches();
 
-    let mut game = Asteroids::default();
+    let mut game = MainGameState::default();
     game.player_is_immortal = matches.is_present("god");
 
     let app_root = application_root_dir();
