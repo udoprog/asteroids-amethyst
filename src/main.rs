@@ -24,19 +24,38 @@ mod asteroids;
 mod bundle;
 mod resources;
 mod systems;
+mod textures;
 
 use std::time::Duration;
+
+use clap::{App, Arg};
 
 const ARENA_HEIGHT: f32 = 300.0;
 const ARENA_WIDTH: f32 = 300.0;
 
-fn main() -> amethyst::Result<()> {
-    // amethyst::start_logger(Default::default());
+fn opts() -> App<'static, 'static> {
+    App::new("Asteroids!")
+        .version("1.0")
+        .author("John-John Tedro <udoprog@tedro.se>")
+        .about("Asteroids! the Game")
+        .arg(Arg::with_name("god")
+             .long("god")
+             .help("Want to be immortal? Now is your chance!"))
+}
 
+fn main() -> amethyst::Result<()> {
     use crate::{
         audio::Silent,
         asteroids::Asteroids,
     };
+
+    amethyst::start_logger(Default::default());
+
+    let app = opts();
+    let matches = app.get_matches();
+
+    let mut game = Asteroids::default();
+    game.player_is_immortal = matches.is_present("god");
 
     let app_root = application_root_dir();
 
@@ -69,7 +88,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(AudioBundle::new(|_: &mut Silent| None))?
         .with_bundle(UiBundle::<String, String>::new())?;
 
-    let mut game = Application::build(assets_dir, Asteroids)?
+    let mut game = Application::build(assets_dir, game)?
         .with_frame_limit(
             FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)),
             144,

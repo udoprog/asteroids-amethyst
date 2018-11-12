@@ -13,7 +13,10 @@ use crate::{
     BoundingVolume, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
 };
 
-pub struct Asteroids;
+#[derive(Default)]
+pub struct Asteroids {
+    pub player_is_immortal: bool,
+}
 
 impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
     fn on_start(&mut self, data: StateData<GameData>) {
@@ -23,9 +26,16 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
         BulletResource::initialize(world);
         AsteroidResource::initialize(world);
         world.add_resource(RandomGen);
-        world.add_resource(GameResource::default());
 
-        initialize_score(world);
+        let game = {
+            let mut game = GameResource::default();
+            game.modifiers.player_is_immortal = self.player_is_immortal;
+            game
+        };
+
+        initialize_score(world, &game);
+
+        world.add_resource(game);
 
         // Setup our game.
         initialise_ship(world);
@@ -34,10 +44,16 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
     }
 
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {
-        let game_resource = data.world.read_resource::<GameResource>();
+        let restart = data.world.read_resource::<GameResource>().restart;
 
-        if game_resource.player_is_dead {
-            return Trans::Quit;
+        if restart {
+            data.world.delete_all();
+
+            return Trans::Switch(Box::new(
+                Asteroids {
+                    player_is_immortal: self.player_is_immortal,
+                }
+            ));
         }
 
         Trans::None
@@ -94,7 +110,7 @@ fn initialise_ship(world: &mut World) {
         .unwrap();
 }
 
-fn initialize_score(world: &mut World) {
+fn initialize_score(world: &mut World, game: &GameResource) {
     let font = world.read_resource::<Loader>().load(
         "font/square.ttf",
         TtfFormat,
@@ -106,12 +122,7 @@ fn initialize_score(world: &mut World) {
     let score_transform = UiTransform::new(
         "Score".to_string(),
         Anchor::TopMiddle,
-        0.,
-        -50.,
-        1.,
-        200.,
-        50.,
-        0,
+        0., -50., 1., 200., 50., 0,
     );
 
     let score_text = world
@@ -124,8 +135,25 @@ fn initialize_score(world: &mut World) {
             50.,
         )).build();
 
+    let mods_transform = UiTransform::new(
+        "Mods".to_string(),
+        Anchor::TopRight,
+        -200., -50., 1., 200., 50., 0,
+    );
+
+    let modifiers_text = world
+        .create_entity()
+        .with(mods_transform)
+        .with(UiText::new(
+            font.clone(),
+            game.modifiers.as_text(),
+            [1.0, 0.0, 0.0, 1.0], 20.,
+        )).build();
+
     world.add_resource(Score {
         score_text,
         asteroids: 0,
+        modifiers_text,
+        current_modifiers: game.modifiers,
     });
 }

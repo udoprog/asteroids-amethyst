@@ -25,6 +25,41 @@ use log::{error, trace};
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
 use smallvec::SmallVec;
 
+#[derive(Default)]
+pub struct GlobalInputSystem {
+    immortal_down: bool,
+}
+
+impl<'s> System<'s> for GlobalInputSystem {
+    type SystemData = (
+        Read<'s, InputHandler<String, String>>,
+        WriteExpect<'s, GameResource>,
+    );
+
+    fn run(&mut self, (input, mut game): Self::SystemData) {
+        let immortal_pressed = input.action_is_down("immortal").unwrap_or(false);
+
+        if immortal_pressed {
+            if !self.immortal_down {
+                game.modifiers.player_is_immortal = !game.modifiers.player_is_immortal;
+                self.immortal_down = true;
+            }
+
+            return;
+        } else {
+            if self.immortal_down {
+                self.immortal_down = false;
+            }
+        }
+
+        let restart_pressed = input.action_is_down("restart").unwrap_or(false);
+
+        if restart_pressed {
+            game.restart = true;
+        }
+    }
+}
+
 pub struct ShipInputSystem;
 
 /// Handle inputs and mutate world accordingly.
@@ -408,8 +443,11 @@ impl<'s> System<'s> for CollisionSystem {
                     return;
                 }
                 (Ship(_), _) | (_, Ship(_)) => {
-                    return;
-                    // game.player_is_dead = true;
+                    if game.modifiers.player_is_immortal {
+                        return;
+                    }
+
+                    game.modifiers.player_is_dead = true;
                 }
                 (Bullet(_), Asteroid(a)) | (Asteroid(a), Bullet(_)) => {
                     sounds.explosion_sfx.play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
@@ -540,6 +578,26 @@ impl<'s> System<'s> for CollisionSystem {
             }
 
             return count;
+        }
+    }
+}
+
+pub struct HandleUiSystem;
+
+impl<'s> System<'s> for HandleUiSystem {
+    type SystemData = (
+        ReadExpect<'s, GameResource>,
+        WriteStorage<'s, UiText>,
+        WriteExpect<'s, Score>,
+    );
+
+    fn run(&mut self, (game, mut text, mut score): Self::SystemData) {
+        if game.modifiers != score.current_modifiers {
+            score.current_modifiers = game.modifiers;
+
+            if let Some(text) = text.get_mut(score.modifiers_text) {
+                text.text = game.modifiers.as_text();
+            }
         }
     }
 }

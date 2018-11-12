@@ -1,58 +1,25 @@
 use amethyst::{
-    assets::{AssetStorage, Loader},
     ecs::{prelude::Entity, World},
-    renderer::{
-        MaterialTextureSet, PngFormat, SpriteRender, SpriteSheet, SpriteSheetFormat,
-        SpriteSheetHandle, Texture, TextureMetadata,
-    },
+    renderer::SpriteRender,
 };
 
-use crate::BoundingVolume;
+use crate::{
+    textures::SpriteSheet,
+    BoundingVolume,
+};
 
 pub struct ShipResource {
-    pub sprite_sheet: SpriteSheetHandle,
+    pub sprite_sheet: SpriteSheet,
 }
 
 impl ShipResource {
     pub fn initialize(world: &mut World) {
-        let texture_handle = {
-            let loader = world.read_resource::<Loader>();
-            let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-            loader.load(
-                "texture/ship.png",
-                PngFormat,
-                TextureMetadata::srgb_scale(),
-                (),
-                &texture_storage,
-            )
-        };
-
-        let sprite_sheet = {
-            let mut material_texture_set = world.write_resource::<MaterialTextureSet>();
-            let texture_id = material_texture_set.len() as u64;
-            material_texture_set.insert(texture_id, texture_handle);
-
-            let loader = world.read_resource::<Loader>();
-            let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-            loader.load(
-                "texture/ship.ron",
-                SpriteSheetFormat,
-                texture_id,
-                (),
-                &sprite_sheet_store,
-            )
-        };
-
+        let sprite_sheet = SpriteSheet::from_path(world, "texture/ship");
         world.add_resource(ShipResource { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self) -> SpriteRender {
-        SpriteRender {
-            sprite_sheet: self.sprite_sheet.clone(),
-            sprite_number: 0,
-            flip_horizontal: false,
-            flip_vertical: false,
-        }
+        self.sprite_sheet.sprite_render(0)
     }
 
     pub fn create_bounding_volume(&self, entity: Entity) -> BoundingVolume {
@@ -61,49 +28,17 @@ impl ShipResource {
 }
 
 pub struct BulletResource {
-    pub sprite_sheet: SpriteSheetHandle,
+    pub sprite_sheet: SpriteSheet,
 }
 
 impl BulletResource {
     pub fn initialize(world: &mut World) {
-        let texture_handle = {
-            let loader = world.read_resource::<Loader>();
-            let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-            loader.load(
-                "texture/bullet.png",
-                PngFormat,
-                TextureMetadata::srgb_scale(),
-                (),
-                &texture_storage,
-            )
-        };
-
-        let sprite_sheet = {
-            let mut material_texture_set = world.write_resource::<MaterialTextureSet>();
-            let texture_id = material_texture_set.len() as u64;
-            material_texture_set.insert(texture_id, texture_handle);
-
-            let loader = world.read_resource::<Loader>();
-            let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-            loader.load(
-                "texture/bullet.ron",
-                SpriteSheetFormat,
-                texture_id,
-                (),
-                &sprite_sheet_store,
-            )
-        };
-
+        let sprite_sheet = SpriteSheet::from_path(world, "texture/bullet");
         world.add_resource(BulletResource { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self) -> SpriteRender {
-        SpriteRender {
-            sprite_sheet: self.sprite_sheet.clone(),
-            sprite_number: 0,
-            flip_horizontal: false,
-            flip_vertical: false,
-        }
+        self.sprite_sheet.sprite_render(0)
     }
 
     pub fn create_bounding_volume(&self, entity: Entity) -> BoundingVolume {
@@ -112,7 +47,7 @@ impl BulletResource {
 }
 
 pub struct AsteroidResource {
-    pub sprite_sheet: SpriteSheetHandle,
+    pub sprite_sheet: SpriteSheet,
 }
 
 impl AsteroidResource {
@@ -120,46 +55,13 @@ impl AsteroidResource {
     pub const NUM_SPRITES: usize = 3;
 
     pub fn initialize(world: &mut World) {
-        let texture_handle = {
-            let loader = world.read_resource::<Loader>();
-            let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-            loader.load(
-                "texture/asteroids.png",
-                PngFormat,
-                TextureMetadata::srgb_scale(),
-                (),
-                &texture_storage,
-            )
-        };
-
-        let sprite_sheet = {
-            let mut material_texture_set = world.write_resource::<MaterialTextureSet>();
-            let texture_id = material_texture_set.len() as u64;
-            material_texture_set.insert(texture_id, texture_handle);
-
-            let loader = world.read_resource::<Loader>();
-            let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-            loader.load(
-                "texture/asteroids.ron",
-                SpriteSheetFormat,
-                texture_id,
-                (),
-                &sprite_sheet_store,
-            )
-        };
-
+        let sprite_sheet = SpriteSheet::from_path(world, "texture/asteroids");
         world.add_resource(AsteroidResource { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self, random_gen: &RandomGen) -> SpriteRender {
-        let sprite_number = random_gen.next_usize() % Self::NUM_SPRITES;
-
-        SpriteRender {
-            sprite_sheet: self.sprite_sheet.clone(),
-            sprite_number,
-            flip_horizontal: false,
-            flip_vertical: false,
-        }
+        let index = random_gen.next_usize() % Self::NUM_SPRITES;
+        self.sprite_sheet.sprite_render(index)
     }
 
     pub fn create_bounding_volume(
@@ -184,9 +86,37 @@ impl RandomGen {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct GameModifiers {
+    /// Player is immortal.
+    pub player_is_immortal: bool,
+    /// Player is dead.
+    pub player_is_dead: bool,
+}
+
+impl GameModifiers {
+    /// Get a text describing modifiers in place.
+    pub fn as_text(&self) -> String {
+        let mut list = Vec::new();
+
+        if self.player_is_immortal {
+            list.push("immortal (F2)");
+        }
+
+        if self.player_is_dead {
+            list.push("dead (R to Restart)");
+        }
+
+        list.join(", ")
+    }
+}
+
 #[derive(Default)]
 pub struct GameResource {
-    pub player_is_dead: bool,
+    /// Restart the game.
+    pub restart: bool,
+    /// Game modifiers in place.
+    pub modifiers: GameModifiers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -217,4 +147,6 @@ impl Collider {
 pub struct Score {
     pub score_text: Entity,
     pub asteroids: u32,
+    pub modifiers_text: Entity,
+    pub current_modifiers: GameModifiers,
 }

@@ -12,7 +12,13 @@
     actions: {
         "shoot": [
             [Key(Space)]
-        ]
+        ],
+        "immortal": [
+            [Key(F2)]
+        ],
+        "restart": [
+            [Key(R)]
+        ],
     },
 )
 
