@@ -1,0 +1,18 @@
+(
+    axes: {
+        "rotate": Emulated(
+            neg: Key(A),
+            pos: Key(D),
+        ),
+        "accelerate": Emulated(
+            pos: Key(W),
+            neg: Key(S),
+        ),
+    },
+    actions: {
+        "shoot": [
+            [Key(Space)]
+        ]
+    },
+)
+
