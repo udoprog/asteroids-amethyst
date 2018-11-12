@@ -44,14 +44,18 @@ impl<'a, 'b> SimpleState<'a, 'b> for Asteroids {
     }
 
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {
-        let restart = data.world.read_resource::<GameResource>().restart;
+        let GameResource {
+            restart,
+            modifiers,
+            ..
+        } = *data.world.read_resource::<GameResource>();
 
         if restart {
             data.world.delete_all();
 
             return Trans::Switch(Box::new(
                 Asteroids {
-                    player_is_immortal: self.player_is_immortal,
+                    player_is_immortal: self.player_is_immortal || modifiers.player_is_immortal,
                 }
             ));
         }
