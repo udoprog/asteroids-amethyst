@@ -25,8 +25,8 @@ mod systems;
 
 use std::time::Duration;
 
-const ARENA_HEIGHT: f32 = 500.0;
-const ARENA_WIDTH: f32 = 500.0;
+const ARENA_HEIGHT: f32 = 300.0;
+const ARENA_WIDTH: f32 = 300.0;
 
 fn main() -> amethyst::Result<()> {
     // amethyst::start_logger(Default::default());
@@ -154,9 +154,9 @@ impl Default for Ship {
             acceleration: 80f32,
             rotation: 8f32,
             reload_timer: 0f32,
-            time_to_reload: 0.1f32,
-            bullet_velocity: 500f32,
-            bullet_jitter: 5.0,
+            time_to_reload: 0.2f32,
+            bullet_velocity: 150f32,
+            bullet_jitter: 2.0f32,
         }
     }
 }
