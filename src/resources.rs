@@ -116,7 +116,8 @@ pub struct AsteroidResource {
 }
 
 impl AsteroidResource {
-    const NUM_SPRITES: usize = 3;
+    pub const MIN_RADIUS: f32 = 4.0;
+    pub const NUM_SPRITES: usize = 3;
 
     pub fn initialize(world: &mut World) {
         let texture_handle = {
@@ -162,7 +163,7 @@ impl AsteroidResource {
     }
 
     pub fn create_bounding_volume(&self, entity: Entity, scale: f32) -> BoundingVolume {
-        BoundingVolume::from_local(entity, 4.0 * scale, Collider::Asteroid)
+        BoundingVolume::from_local(entity, Self::MIN_RADIUS * scale, Collider::Asteroid)
     }
 }
 

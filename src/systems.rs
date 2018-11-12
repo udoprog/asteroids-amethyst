@@ -1,11 +1,11 @@
 use amethyst::{
     core::{
-        nalgebra::{Vector2, Vector3},
+        nalgebra::{UnitQuaternion, Vector2, Vector3},
         timing::Time,
         transform::Transform,
     },
     ecs::{
-        prelude::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage},
+        prelude::{Entities, Entity, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage},
         ReadExpect, WriteExpect,
     },
     input::InputHandler,
@@ -15,7 +15,7 @@ use crate::{
     resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
     BoundingVolume, Bullet, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
 };
-use log::error;
+use log::{error, trace};
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
 use smallvec::SmallVec;
 
@@ -229,25 +229,47 @@ impl<'s> System<'s> for RandomAsteroidSystem {
             local.translation_mut().y = ARENA_WIDTH;
 
             let scale = 1.0f32 + rand.next_f32();
-            *local.scale_mut() = Vector3::new(scale, scale, 1.0f32);
 
-            let mut physical = Physical::new();
-            let x_vel = (rand.next_f32() - 0.5) * 2.0 * self.max_velocity;
-            let y_vel = (rand.next_f32() - 0.5) * 2.0 * self.max_velocity;
-            physical.velocity = Vector2::new(x_vel, y_vel);
-            physical.rotation = self.max_rotation * rand.next_f32();
+            let r = || (rand.next_f32() - 0.5) * 2.0 * self.max_velocity;
+            let velocity = Vector2::new(r(), r());
 
-            let e = entities.create();
-
-            lazy.insert(e, local);
-            lazy.insert(e, physical);
-            lazy.insert(e, ConstrainedObject);
-            lazy.insert(e, asteroid_resource.new_sprite_render(&rand));
-            lazy.insert(e, asteroid_resource.create_bounding_volume(e, scale));
+            spawn_asteroid(
+                entities.create(),
+                &lazy,
+                &rand,
+                &asteroid_resource,
+                local,
+                scale,
+                velocity,
+                self.max_rotation,
+            );
 
             self.time_to_spawn = rand.next_f32() * self.average_spawn_time;
         }
     }
+}
+
+fn spawn_asteroid(
+    e: Entity,
+    lazy: &Read<LazyUpdate>,
+    rand: &ReadExpect<RandomGen>,
+    asteroid_resource: &ReadExpect<AsteroidResource>,
+    mut local: Transform,
+    scale: f32,
+    velocity: Vector2<f32>,
+    max_rotation: f32,
+) {
+    *local.scale_mut() = Vector3::new(scale, scale, 1.0f32);
+
+    let mut physical = Physical::new();
+    physical.velocity = velocity;
+    physical.rotation = max_rotation * rand.next_f32();
+
+    lazy.insert(e, local);
+    lazy.insert(e, physical);
+    lazy.insert(e, ConstrainedObject);
+    lazy.insert(e, asteroid_resource.new_sprite_render(rand));
+    lazy.insert(e, asteroid_resource.create_bounding_volume(e, scale));
 }
 
 /// Applies physics to `Physical` entities.
@@ -291,11 +313,24 @@ impl<'s> System<'s> for CollisionSystem {
         WriteExpect<'s, GameResource>,
         WriteStorage<'s, UiText>,
         WriteExpect<'s, Score>,
+        Read<'s, LazyUpdate>,
+        ReadExpect<'s, AsteroidResource>,
+        ReadExpect<'s, RandomGen>,
         Entities<'s>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (bounding_volumes, locals, mut game, mut text, mut score, entities) = data;
+        let (
+            bounding_volumes,
+            locals,
+            mut game,
+            mut text,
+            mut score,
+            lazy,
+            asteroids_resource,
+            rand,
+            entities,
+        ) = data;
 
         let mut broad_phase = DBVTBroadPhase::new(0f32);
 
@@ -305,6 +340,8 @@ impl<'s> System<'s> for CollisionSystem {
             let vol = bounding_volume.apply_to_broad_phase(local, &mut broad_phase);
             tests.push((vol, bounding_volume.collider));
         }
+
+        let mut spawned = 0;
 
         broad_phase.update(&mut |a, b| a != b, &mut |a, b, _| {
             use self::Collider::*;
@@ -316,11 +353,44 @@ impl<'s> System<'s> for CollisionSystem {
                 (Ship(_), _) | (_, Ship(_)) => {
                     game.player_is_dead = true;
                 }
-                (Bullet(_), Asteroid(_)) | (Asteroid(_), Bullet(_)) => {
+                (Bullet(_), Asteroid(a)) | (Asteroid(a), Bullet(_)) => {
                     score.asteroids += 1;
 
                     if let Some(text) = text.get_mut(score.score_text) {
                         text.text = score.asteroids.to_string();
+                    }
+
+                    // explode into smaller asteroids.
+                    if let Some((local, volume)) = asteroid_data(a, &bounding_volumes, &locals) {
+                        spawned += spawn_asteroid_cluster(
+                            local,
+                            volume,
+                            &entities,
+                            &lazy,
+                            &asteroids_resource,
+                            &rand,
+                        );
+                    }
+                }
+                // this one is _interesting_, cause now we get to break up asteroids if they are
+                // big enough!
+                (Asteroid(a), Asteroid(b)) => {
+                    let a = asteroid_data(a, &bounding_volumes, &locals);
+                    let b = asteroid_data(b, &bounding_volumes, &locals);
+
+                    if let (Some(a), Some(b)) = (a, b) {
+                        let mut local = Transform::default();
+                        *local.translation_mut() = (a.0.translation() + b.0.translation()) / 2.0;
+                        let volume = a.1 + b.1;
+
+                        spawned += spawn_asteroid_cluster(
+                            local,
+                            volume,
+                            &entities,
+                            &lazy,
+                            &asteroids_resource,
+                            &rand,
+                        );
                     }
                 }
                 _ => {}
@@ -334,5 +404,78 @@ impl<'s> System<'s> for CollisionSystem {
                 error!("failed to delete entity: {:?}: {}", b, e);
             }
         });
+
+        if spawned > 0 {
+            trace!("SPAWNED: {}", spawned);
+        }
+
+        fn asteroid_data(
+            e: Entity,
+            bounding_volumes: &ReadStorage<BoundingVolume>,
+            locals: &ReadStorage<Transform>,
+        ) -> Option<(Transform, f32)> {
+            use std::f32::consts;
+
+            let volume = match bounding_volumes.get(e) {
+                Some(volume) => volume,
+                None => return None,
+            };
+
+            let local = match locals.get(e) {
+                Some(local) => local.clone(),
+                None => return None,
+            };
+
+            Some((local.clone(), volume.shape.radius().powf(2.0) * consts::PI))
+        }
+
+        fn spawn_asteroid_cluster(
+            local: Transform,
+            c: f32,
+            entities: &Entities,
+            lazy: &Read<LazyUpdate>,
+            asteroids_resource: &ReadExpect<AsteroidResource>,
+            rand: &ReadExpect<RandomGen>,
+        ) -> usize {
+            use std::f32::consts;
+
+            let min_area = AsteroidResource::MIN_RADIUS.powf(2.0) * consts::PI;
+
+            let mut angle = 0.0f32;
+
+            let mut count = 0;
+
+            if c < (min_area * 3.0) {
+                return count;
+            }
+
+            for _ in 0..2 {
+                count += 1;
+                angle += rand.next_f32() * consts::PI;
+
+                let rotation = UnitQuaternion::from_axis_angle(&Vector3::z_axis(), angle);
+
+                let offset = rotation * Vector3::x() * (10.0 + rand.next_f32() * 2.0);
+
+                let velocity = rotation * Vector3::x() * 100.0 * rand.next_f32();
+                let velocity = Vector2::new(velocity.x, velocity.y);
+
+                let mut local = local.clone();
+                *local.translation_mut() += offset;
+
+                spawn_asteroid(
+                    entities.create(),
+                    lazy,
+                    rand,
+                    asteroids_resource,
+                    local,
+                    1.0,
+                    velocity,
+                    0.10,
+                );
+            }
+
+            return count;
+        }
     }
 }

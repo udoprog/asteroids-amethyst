@@ -154,7 +154,7 @@ impl Default for Ship {
             acceleration: 80f32,
             rotation: 180f32,
             reload_timer: 0f32,
-            time_to_reload: 0.2f32,
+            time_to_reload: 0.05f32,
             bullet_velocity: 150f32,
             bullet_jitter: 2.0f32,
         }
@@ -172,7 +172,7 @@ pub struct Bullet {
 
 impl Bullet {
     pub fn new() -> Bullet {
-        Bullet { time_to_live: 1f32 }
+        Bullet { time_to_live: 2f32 }
     }
 }
 
