@@ -182,7 +182,7 @@ impl<'s> System<'s> for ShipInputSystem {
             lazy.insert(e, bullet_resource.new_sprite_render());
             lazy.insert(e, Bullet::new());
             lazy.insert(e, bullet_resource.new_bounded());
-            lazy.insert(e, Collider::Bullet(e));
+            lazy.insert(e, Collider::Bullet);
         }
 
         struct NewBullet {
@@ -337,9 +337,9 @@ fn spawn_asteroid(
     lazy.insert(e, asteroid_resource.new_bounded(scale));
 
     let collider = if defer_adding_bounds {
-        Collider::DeferredAsteroid(e)
+        Collider::DeferredAsteroid
     } else {
-        Collider::Asteroid(e)
+        Collider::Asteroid
     };
 
     lazy.insert(e, collider);
@@ -420,10 +420,10 @@ impl<'s> System<'s> for CollisionSystem {
         let mut deferred = HashSet::new();
         let mut seen = HashSet::new();
 
-        for (local, collider, bounding_volume) in (&locals, &colliders, &bounding_volumes).join() {
-            let _ = bounding_volume.apply_to_broad_phase(local, *collider, &mut broad_phase);
+        for (e, local, collider, bounding_volume) in (&entities, &locals, &colliders, &bounding_volumes).join() {
+            let _ = bounding_volume.apply_to_broad_phase(*collider, e, local, &mut broad_phase);
 
-            if let Collider::DeferredAsteroid(e) = *collider {
+            if let Collider::DeferredAsteroid = *collider {
                 deferred.insert(e);
             }
         }
@@ -435,7 +435,7 @@ impl<'s> System<'s> for CollisionSystem {
 
             // play the appropriate sound.
             match (*a, *b) {
-                (Asteroid(_), _) | (_, Asteroid(_)) => {
+                ((Asteroid, _), _) | (_, (Asteroid, _)) => {
                     sounds
                         .collision_sfx
                         .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
@@ -444,22 +444,22 @@ impl<'s> System<'s> for CollisionSystem {
             }
 
             match (*a, *b) {
-                (DeferredAsteroid(a), DeferredAsteroid(b)) => {
+                ((DeferredAsteroid, a), (DeferredAsteroid, b)) => {
                     seen.insert(a);
                     seen.insert(b);
                     return;
                 }
-                (Bullet(_), Ship(_)) | (Ship(_), Bullet(_)) => {
+                ((Bullet, _), (Ship, _)) | ((Ship, _), (Bullet, _)) => {
                     return;
                 }
-                (Ship(_), _) | (_, Ship(_)) => {
+                ((Ship, _), _) | (_, (Ship, _)) => {
                     if game.modifiers.player_is_immortal {
                         return;
                     }
 
                     game.modifiers.player_is_dead = true;
                 }
-                (Bullet(_), Asteroid(a)) | (Asteroid(a), Bullet(_)) => {
+                ((Bullet, _), (Asteroid, a)) | ((Asteroid, a), (Bullet, _)) => {
                     sounds
                         .explosion_sfx
                         .play(&rand, &audio_storage, audio.as_ref().map(|o| &**o));
@@ -484,7 +484,7 @@ impl<'s> System<'s> for CollisionSystem {
                 }
                 // this one is _interesting_, cause now we get to break up asteroids if they are
                 // big enough!
-                (Asteroid(a), Asteroid(b)) => {
+                ((Asteroid, a), (Asteroid, b)) => {
                     let a = asteroid_data(a, &bounding_volumes, &locals);
                     let b = asteroid_data(b, &bounding_volumes, &locals);
 
@@ -506,11 +506,11 @@ impl<'s> System<'s> for CollisionSystem {
                 _ => {}
             }
 
-            if let Err(e) = entities.delete(a.entity()) {
+            if let Err(e) = entities.delete(a.1) {
                 error!("failed to delete entity: {:?}: {}", a, e);
             }
 
-            if let Err(e) = entities.delete(b.entity()) {
+            if let Err(e) = entities.delete(b.1) {
                 error!("failed to delete entity: {:?}: {}", b, e);
             }
         });
@@ -518,7 +518,7 @@ impl<'s> System<'s> for CollisionSystem {
         // undefer deferred
         for e in deferred {
             if !seen.contains(&e) {
-                lazy.insert(e, Collider::Asteroid(e));
+                lazy.insert(e, Collider::Asteroid);
             }
         }
 

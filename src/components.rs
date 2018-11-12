@@ -53,17 +53,18 @@ impl Bounded {
     /// Apply this bounding volume to a broad phase.
     pub fn apply_to_broad_phase<B>(
         &self,
-        local: &Transform,
         collider: Collider,
+        e: Entity,
+        local: &Transform,
         broad_phase: &mut B,
     ) -> AABB<f32>
     where
-        B: BroadPhase<f32, AABB<f32>, Collider>,
+        B: BroadPhase<f32, AABB<f32>, (Collider, Entity)>,
     {
         let t = local.translation();
         let pos = Isometry2::new(Vector2::new(t.x, t.y), nalgebra::zero());
         let vol = bounding_volume::aabb(&self.shape, &pos);
-        let _ = broad_phase.create_proxy(vol.clone(), collider);
+        let _ = broad_phase.create_proxy(vol.clone(), (collider, e));
         vol
     }
 }
@@ -128,26 +129,12 @@ impl Component for ConstrainedObject {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Collider {
-    Bullet(Entity),
-    Ship(Entity),
-    Asteroid(Entity),
+    Bullet,
+    Ship,
+    Asteroid,
     /// Asteroid can collide, but will not register collissions until it's gone one frame without
     /// collisions.
-    DeferredAsteroid(Entity),
-}
-
-impl Collider {
-    /// Access the entity this collider is part of.
-    pub fn entity(&self) -> Entity {
-        use self::Collider::*;
-
-        match *self {
-            Bullet(e) => e,
-            Ship(e) => e,
-            Asteroid(e) => e,
-            DeferredAsteroid(e) => e,
-        }
-    }
+    DeferredAsteroid,
 }
 
 impl Component for Collider {

@@ -9,7 +9,7 @@ use amethyst::{
 
 use crate::{
     audio::initialise_audio,
-    components::{Bounded, Collider, ConstrainedObject, Physical, Ship},
+    components::{Collider, ConstrainedObject, Physical, Ship},
     resources::{Asteroids, Bullets, Game, RandomGen, Score, ShipResource},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
@@ -88,29 +88,21 @@ fn initialise_ship(world: &mut World) {
         ship_resource.new_sprite_render()
     };
 
-    let entity = world
-        .create_entity()
-        .with(sprite_render)
-        .with(Ship::default())
-        .with(Physical::new())
-        .with(ConstrainedObject)
-        .with(local)
-        .build();
-
     let bounding_volume = {
         let ship_resource = world.read_resource::<ShipResource>();
         ship_resource.new_bounded()
     };
 
     world
-        .write_storage::<Bounded>()
-        .insert(entity, bounding_volume)
-        .unwrap();
-
-    world
-        .write_storage::<Collider>()
-        .insert(entity, Collider::Ship(entity))
-        .unwrap();
+        .create_entity()
+        .with(sprite_render)
+        .with(Ship::default())
+        .with(Physical::new())
+        .with(ConstrainedObject)
+        .with(local)
+        .with(Collider::Ship)
+        .with(bounding_volume)
+        .build();
 }
 
 fn initialize_score(world: &mut World, game: &Game) {
