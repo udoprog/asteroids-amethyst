@@ -195,6 +195,7 @@ pub struct RandomAsteroidSystem {
     pub time_to_spawn: f32,
     pub max_velocity: f32,
     pub max_rotation: f32,
+    pub average_spawn_time: f32,
 }
 
 impl RandomAsteroidSystem {
@@ -203,6 +204,7 @@ impl RandomAsteroidSystem {
             time_to_spawn: 2f32,
             max_velocity: 100f32,
             max_rotation: 15f32,
+            average_spawn_time: 0.5f32,
         }
     }
 }
@@ -243,7 +245,7 @@ impl<'s> System<'s> for RandomAsteroidSystem {
             lazy.insert(e, asteroid_resource.new_sprite_render(&rand));
             lazy.insert(e, asteroid_resource.create_bounding_volume(e, scale));
 
-            self.time_to_spawn = rand.next_f32() * 2f32;
+            self.time_to_spawn = rand.next_f32() * self.average_spawn_time;
         }
     }
 }
