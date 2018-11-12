@@ -180,20 +180,6 @@ impl Component for Bullet {
     type Storage = DenseVecStorage<Self>;
 }
 
-pub struct Asteroid {
-}
-
-impl Asteroid {
-    pub fn new() -> Asteroid {
-        Asteroid {
-        }
-    }
-}
-
-impl Component for Asteroid {
-    type Storage = DenseVecStorage<Self>;
-}
-
 #[derive(Debug, Default)]
 pub struct ConstrainedObject;
 

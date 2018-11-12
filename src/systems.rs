@@ -5,16 +5,15 @@ use amethyst::{
         transform::Transform,
     },
     ecs::{
-        prelude::{Entities, Join, Read, ReadStorage, System, WriteStorage},
+        prelude::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage},
         ReadExpect, WriteExpect,
     },
     input::InputHandler,
-    renderer::SpriteRender,
     ui::UiText,
 };
 use crate::{
     resources::{AsteroidResource, BulletResource, Collider, GameResource, RandomGen, Score},
-    Asteroid, BoundingVolume, Bullet, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
+    BoundingVolume, Bullet, ConstrainedObject, Physical, Ship, ARENA_HEIGHT, ARENA_WIDTH,
 };
 use log::error;
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
@@ -30,33 +29,18 @@ impl<'s> System<'s> for ShipInputSystem {
     type SystemData = (
         WriteStorage<'s, Ship>,
         WriteStorage<'s, Physical>,
-        WriteStorage<'s, Bullet>,
-        WriteStorage<'s, Transform>,
+        ReadStorage<'s, Transform>,
         Read<'s, Time>,
         Read<'s, InputHandler<String, String>>,
         ReadExpect<'s, BulletResource>,
-        WriteStorage<'s, SpriteRender>,
-        WriteStorage<'s, ConstrainedObject>,
-        WriteStorage<'s, BoundingVolume>,
         ReadExpect<'s, RandomGen>,
         Entities<'s>,
+        Read<'s, LazyUpdate>,
     );
 
     fn run(&mut self, system: Self::SystemData) {
-        let (
-            mut ships,
-            mut physicals,
-            mut bullets,
-            mut locals,
-            time,
-            input,
-            bullet_resource,
-            mut sprite_renders,
-            mut constrained,
-            mut bounding_volumes,
-            rand,
-            entities,
-        ) = system;
+        let (mut ships, mut physicals, locals, time, input, bullet_resource, rand, entities, lazy) =
+            system;
 
         let time_delta = time.delta_seconds();
 
@@ -130,17 +114,14 @@ impl<'s> System<'s> for ShipInputSystem {
             let mut physical = Physical::new();
             physical.velocity = Vector2::new(velocity.x, velocity.y);
 
-            let entity = entities
-                .build_entity()
-                .with(bullet_resource.new_sprite_render(), &mut sprite_renders)
-                .with(Bullet::new(), &mut bullets)
-                .with(physical, &mut physicals)
-                .with(ConstrainedObject, &mut constrained)
-                .with(local, &mut locals)
-                .build();
+            let e = entities.create();
 
-            let bounding_volume = bullet_resource.create_bounding_volume(entity);
-            bounding_volumes.insert(entity, bounding_volume).unwrap();
+            lazy.insert(e, local);
+            lazy.insert(e, physical);
+            lazy.insert(e, ConstrainedObject);
+            lazy.insert(e, bullet_resource.new_sprite_render());
+            lazy.insert(e, Bullet::new());
+            lazy.insert(e, bullet_resource.create_bounding_volume(e));
         }
 
         struct NewBullet {
@@ -221,7 +202,7 @@ impl RandomAsteroidSystem {
         Self {
             time_to_spawn: 2f32,
             max_velocity: 100f32,
-            max_rotation: 30f32,
+            max_rotation: 15f32,
         }
     }
 }
@@ -229,30 +210,14 @@ impl RandomAsteroidSystem {
 impl<'s> System<'s> for RandomAsteroidSystem {
     type SystemData = (
         Entities<'s>,
-        WriteStorage<'s, Physical>,
-        WriteStorage<'s, Asteroid>,
-        WriteStorage<'s, Transform>,
-        WriteStorage<'s, SpriteRender>,
-        WriteStorage<'s, ConstrainedObject>,
-        WriteStorage<'s, BoundingVolume>,
         ReadExpect<'s, AsteroidResource>,
         ReadExpect<'s, RandomGen>,
         Read<'s, Time>,
+        Read<'s, LazyUpdate>,
     );
 
     fn run(&mut self, system: Self::SystemData) {
-        let (
-            entities,
-            mut physicals,
-            mut asteroids,
-            mut locals,
-            mut sprite_renders,
-            mut constrained,
-            mut bounding_volumes,
-            asteroid_resource,
-            rand,
-            time,
-        ) = system;
+        let (entities, asteroid_resource, rand, time, lazy) = system;
 
         self.time_to_spawn -= time.delta_seconds();
 
@@ -270,19 +235,14 @@ impl<'s> System<'s> for RandomAsteroidSystem {
             physical.velocity = Vector2::new(x_vel, y_vel);
             physical.rotation = self.max_rotation * rand.next_f32();
 
-            let entity = entities
-                .build_entity()
-                .with(
-                    asteroid_resource.new_sprite_render(&rand),
-                    &mut sprite_renders,
-                ).with(Asteroid::new(), &mut asteroids)
-                .with(physical, &mut physicals)
-                .with(ConstrainedObject, &mut constrained)
-                .with(local, &mut locals)
-                .build();
+            let e = entities.create();
 
-            let bounding_volume = asteroid_resource.create_bounding_volume(entity, scale);
-            bounding_volumes.insert(entity, bounding_volume).unwrap();
+            lazy.insert(e, local);
+            lazy.insert(e, physical);
+            lazy.insert(e, ConstrainedObject);
+            lazy.insert(e, asteroid_resource.new_sprite_render(&rand));
+            lazy.insert(e, asteroid_resource.create_bounding_volume(e, scale));
+
             self.time_to_spawn = rand.next_f32() * 2f32;
         }
     }
