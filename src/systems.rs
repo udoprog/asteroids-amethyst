@@ -15,7 +15,7 @@ use amethyst::{
 };
 use crate::{
     audio::Sounds,
-    components::{Bounded, Bullet, Collider, ConstrainedObject, Physical, Ship},
+    components::{Bounded, Bullet, DeferredCollider, Collider, ConstrainedObject, Physical, Ship},
     resources::{Asteroids, Bullets, Game, RandomGen, Score},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
@@ -107,23 +107,15 @@ impl<'s> System<'s> for ShipInputSystem {
         for (ship, physical, local) in (&mut ships, &mut physicals, &locals).join() {
             // handle acceleration.
             if let Some(acceleration) = accelerate {
-                // velocity to add.
                 let added = Vector3::y() * ship.acceleration * time_delta * acceleration as f32;
-
-                // add the velocity in the direction of the ship.
                 let added = local.rotation() * added;
+                physical.velocity += Vector2::new(added.x, added.y);
 
-                physical.velocity = physical.velocity + Vector2::new(added.x, added.y);
-
-                // limit velocity by some maximum.
+                // limit velocity.
                 let magnitude = physical.velocity.magnitude();
 
-                if magnitude != 0f32 {
-                    let factor = magnitude / physical.max_velocity;
-
-                    if factor > 1.0f32 {
-                        physical.velocity = physical.velocity / factor;
-                    }
+                if magnitude > physical.max_velocity {
+                    physical.velocity /= magnitude / physical.max_velocity;
                 }
             }
 
@@ -182,7 +174,7 @@ impl<'s> System<'s> for ShipInputSystem {
             lazy.insert(e, bullet_resource.new_sprite_render());
             lazy.insert(e, Bullet::new());
             lazy.insert(e, bullet_resource.new_bounded());
-            lazy.insert(e, Collider::Deferred(Box::new(Collider::Bullet)));
+            lazy.insert(e, Collider::Deferred(DeferredCollider::Bullet));
         }
 
         struct NewBullet {
@@ -337,7 +329,7 @@ fn spawn_asteroid(
     lazy.insert(e, asteroid_resource.new_bounded(scale));
 
     let collider = if defer_adding_bounds {
-        Collider::Deferred(Box::new(Collider::Asteroid))
+        Collider::Deferred(DeferredCollider::Asteroid)
     } else {
         Collider::Asteroid
     };
@@ -348,6 +340,8 @@ fn spawn_asteroid(
 /// Applies physics to `Physical` entities.
 ///
 /// The system applies velocity and rotation to the objects in the system.
+
+
 pub struct PhysicsSystem;
 
 impl<'s> System<'s> for PhysicsSystem {
@@ -425,8 +419,8 @@ impl<'s> System<'s> for CollisionSystem {
             let _ =
                 bounding_volume.apply_to_broad_phase(collider.clone(), e, local, &mut broad_phase);
 
-            if let Collider::Deferred(ref next) = *collider {
-                deferred.insert(e, next);
+            if let Collider::Deferred(next) = *collider {
+                deferred.insert(e, next.to_collider());
             }
         }
 
@@ -521,7 +515,7 @@ impl<'s> System<'s> for CollisionSystem {
 
         // undefer deferred
         for (e, next) in deferred {
-            lazy.insert(e, *next.clone());
+            lazy.insert(e, next);
         }
 
         if spawned > 0 {

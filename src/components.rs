@@ -127,7 +127,25 @@ impl Component for ConstrainedObject {
     type Storage = NullStorage<Self>;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A deferred collider waiting to be converted into a real collider.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeferredCollider {
+    Bullet,
+    Asteroid,
+}
+
+impl DeferredCollider {
+    pub fn to_collider(self) -> Collider {
+        use self::DeferredCollider::*;
+
+        match self {
+            Bullet => Collider::Bullet,
+            Asteroid => Collider::Asteroid,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Collider {
     Bullet,
     Ship,
@@ -136,7 +154,7 @@ pub enum Collider {
     ///
     /// To avoid causing additional collisions, this defers adding a collider until it is no longer
     /// intersecting with other Deferreds.
-    Deferred(Box<Collider>),
+    Deferred(DeferredCollider),
 }
 
 impl Component for Collider {
