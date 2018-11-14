@@ -7,6 +7,7 @@ use amethyst::{
     utils::application_root_dir,
 };
 
+mod enabled;
 mod audio;
 mod bundle;
 mod components;
@@ -35,11 +36,7 @@ fn opts() -> App<'static, 'static> {
 }
 
 fn main() -> amethyst::Result<()> {
-    use amethyst::{
-        shred::DispatcherBuilder,
-        core::bundle::SystemBundle,
-        prelude::{Application, Config, GameDataBuilder}
-    };
+    use amethyst::prelude::{Application, Config, GameDataBuilder};
     use crate::{
         audio::Silent,
         states::{MainGameState, DataBuilder},
@@ -80,22 +77,19 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?,
         )?
-
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_bundle(TransformBundle::new())?
         .with_bundle(AudioBundle::new(|_: &mut Silent| None))?
         .with_bundle(UiBundle::<String, String>::new())?
-        .with_bundle(GlobalBundle)?;
-
-    let mut main = DispatcherBuilder::default();
-    MainBundle.build(&mut main)?;
+        .with_bundle(GlobalBundle)?
+        .with_bundle(MainBundle)?;
 
     let mut game = Application::build(assets_dir, game)?
         .with_frame_limit(
             FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)),
             144,
         )
-        .build(DataBuilder { base, main })?;
+        .build(DataBuilder { base })?;
 
     game.run();
     Ok(())

@@ -1,12 +1,6 @@
 use amethyst::{
-    shred::{
-        DispatcherBuilder, Dispatcher,
-    },
     assets::Loader,
-    core::{
-        ArcThreadPool,
-        transform::Transform,
-    },
+    core::transform::Transform,
     ecs::prelude::World,
     prelude::{
         State, StateEvent, StateData, GameDataBuilder, GameData, Trans, Builder, DataInit,
@@ -16,33 +10,34 @@ use amethyst::{
     input::is_close_requested,
 };
 
+#[derive(Debug, PartialEq)]
+pub enum CurrentState {
+    Main,
+    Paused,
+}
+
+impl Default for CurrentState {
+    fn default() -> Self {
+        CurrentState::Main
+    }
+}
+
 pub struct Data<'a, 'b> {
     // Base dispatcher.
     pub base: GameData<'a, 'b>,
-    // Dispatcher for the main game.
-    pub main: Dispatcher<'a, 'b>,
 }
 
 #[derive(Default)]
 pub struct DataBuilder<'a, 'b> {
     pub base: GameDataBuilder<'a, 'b>,
-    pub main: DispatcherBuilder<'a, 'b>,
 }
 
 impl<'a, 'b> DataInit<Data<'a, 'b>> for DataBuilder<'a, 'b> {
     fn build(self, world: &mut World) -> Data<'a, 'b> {
         let base = self.base.build(world);
 
-        let mut main = {
-            let pool = world.read_resource::<ArcThreadPool>();
-            self.main.with_pool(pool.clone()).build()
-        };
-
-        main.setup(&mut world.res);
-
         Data {
-            base,
-            main,
+            base
         }
     }
 }
@@ -86,6 +81,10 @@ impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for MainGameState {
         initialise_audio(world);
     }
 
+    fn on_resume(&mut self, data: StateData<Data>) {
+        *data.world.write_resource::<CurrentState>() = CurrentState::Main;
+    }
+
     fn update(&mut self, data: StateData<Data>) -> CustomTrans<'a, 'b> {
         let StateData {
             data,
@@ -95,11 +94,10 @@ impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for MainGameState {
 
         let Data {
             ref mut base,
-            ref mut main,
+            ..
         } = *data;
 
         base.update(world);
-        main.dispatch(&world.res);
 
         let Game {
             restart, modifiers, ..
@@ -251,8 +249,9 @@ fn initialize_score(world: &mut World, game: &Game) {
 pub struct PauseState;
 
 impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for PauseState {
-    fn on_start(&mut self, _: StateData<Data>) {
+    fn on_start(&mut self, data: StateData<Data>) {
         println!("Game Paused");
+        *data.world.write_resource::<CurrentState>() = CurrentState::Paused;
     }
 
     fn update(&mut self, data: StateData<Data>) -> CustomTrans<'a, 'b> {
