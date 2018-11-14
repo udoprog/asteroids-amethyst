@@ -2,7 +2,7 @@ use amethyst::{
     assets::{AssetStorage, Loader},
     ecs::World,
     renderer::{
-        self, MaterialTextureSet, PngFormat, SpriteRender, SpriteSheetFormat, SpriteSheetHandle,
+        self, PngFormat, SpriteRender, SpriteSheetFormat, SpriteSheetHandle,
         Texture, TextureMetadata,
     },
 };
@@ -30,16 +30,12 @@ impl SpriteSheet {
         };
 
         let handle = {
-            let mut material_texture_set = world.write_resource::<MaterialTextureSet>();
-            let texture_id = material_texture_set.len() as u64;
-            material_texture_set.insert(texture_id, texture_handle);
-
             let loader = world.read_resource::<Loader>();
             let sprite_sheet_store = world.read_resource::<AssetStorage<renderer::SpriteSheet>>();
             let handle = loader.load(
                 format!("{}.ron", path).as_str(),
                 SpriteSheetFormat,
-                texture_id,
+                texture_handle,
                 (),
                 &sprite_sheet_store,
             );

@@ -5,14 +5,14 @@ use amethyst::{
 
 use crate::{components::Bounded, textures::SpriteSheet};
 
-pub struct ShipResource {
+pub struct Ships {
     pub sprite_sheet: SpriteSheet,
 }
 
-impl ShipResource {
+impl Ships {
     pub fn initialize(world: &mut World) {
         let sprite_sheet = SpriteSheet::from_path(world, "texture/ship");
-        world.add_resource(ShipResource { sprite_sheet });
+        world.add_resource(Ships { sprite_sheet });
     }
 
     pub fn new_sprite_render(&self) -> SpriteRender {
@@ -110,6 +110,8 @@ impl GameModifiers {
 pub struct Game {
     /// Restart the game.
     pub restart: bool,
+    /// Pause the game.
+    pub pause: bool,
     /// Game modifiers in place.
     pub modifiers: GameModifiers,
 }

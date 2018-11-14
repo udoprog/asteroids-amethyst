@@ -19,6 +19,9 @@
         "restart": [
             [Key(R)]
         ],
+        "pause": [
+            [Key(P)]
+        ],
     },
 )
 

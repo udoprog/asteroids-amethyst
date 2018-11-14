@@ -7,11 +7,19 @@ use crate::systems::{
     PhysicsSystem, RandomAsteroidSystem, ShipInputSystem,
 };
 
+pub struct GlobalBundle;
+
+impl<'a, 'b> SystemBundle<'a, 'b> for GlobalBundle {
+    fn build(self, builder: &mut DispatcherBuilder<'a, 'b>) -> Result<()> {
+        builder.add(GlobalInputSystem::default(), "global_input", &[]);
+        Ok(())
+    }
+}
+
 pub struct MainBundle;
 
 impl<'a, 'b> SystemBundle<'a, 'b> for MainBundle {
     fn build(self, builder: &mut DispatcherBuilder<'a, 'b>) -> Result<()> {
-        builder.add(GlobalInputSystem::default(), "global_input", &[]);
         builder.add(KillBulletsSystem, "kill_bullets", &[]);
         builder.add(RandomAsteroidSystem::new(), "random_asteroids", &[]);
         builder.add(ShipInputSystem, "ship_input_system", &[]);

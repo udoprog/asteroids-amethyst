@@ -23,9 +23,71 @@ use log::{error, trace};
 use ncollide2d::broad_phase::{BroadPhase, DBVTBroadPhase};
 use smallvec::SmallVec;
 
+#[derive(Debug, Clone, Copy)]
+pub enum Action {
+    Active,
+    Inactive,
+}
+
+impl Default for Action {
+    fn default() -> Self {
+        Action::Inactive
+    }
+}
+
+impl Action {
+    /// Test an action, and transition it into a different state if applicable.
+    pub fn test(&mut self, input: &InputHandler<String, String>, name: &str) -> ActionTransition {
+        let down = input.action_is_down(name).unwrap_or(false);
+
+        match *self {
+            Action::Inactive => {
+                if down {
+                    *self = Action::Active;
+                    return ActionTransition::Activated;
+                }
+            }
+            Action::Active => {
+                if !down {
+                    *self = Action::Inactive;
+                    return ActionTransition::Deactivated;
+                }
+            }
+        }
+
+        ActionTransition::None
+    }
+}
+
+/// The transition of an action.
+#[derive(Debug, Clone, Copy)]
+pub enum ActionTransition {
+    Activated,
+    Deactivated,
+    None,
+}
+
+impl ActionTransition {
+    /// Call the given callback if action is activated.
+    pub fn activated(self, mut c: impl FnMut()) {
+        if let ActionTransition::Activated = self {
+            c();
+        }
+    }
+
+    /// Call the given callback if action is deactivated.
+    pub fn deactivated(self, mut c: impl FnMut()) {
+        if let ActionTransition::Deactivated = self {
+            c();
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct GlobalInputSystem {
-    immortal_down: bool,
+    immortal: Action,
+    restart: Action,
+    pause: Action,
 }
 
 impl<'s> System<'s> for GlobalInputSystem {
@@ -35,26 +97,17 @@ impl<'s> System<'s> for GlobalInputSystem {
     );
 
     fn run(&mut self, (input, mut game): Self::SystemData) {
-        let immortal_pressed = input.action_is_down("immortal").unwrap_or(false);
+        self.immortal.test(&input, "immortal").activated(|| {
+            game.modifiers.player_is_immortal = !game.modifiers.player_is_immortal;
+        });
 
-        if immortal_pressed {
-            if !self.immortal_down {
-                game.modifiers.player_is_immortal = !game.modifiers.player_is_immortal;
-                self.immortal_down = true;
-            }
-
-            return;
-        } else {
-            if self.immortal_down {
-                self.immortal_down = false;
-            }
-        }
-
-        let restart_pressed = input.action_is_down("restart").unwrap_or(false);
-
-        if restart_pressed {
+        self.restart.test(&input, "restart").activated(|| {
             game.restart = true;
-        }
+        });
+
+        self.pause.test(&input, "pause").activated(|| {
+            game.pause = true;
+        });
     }
 }
 
@@ -519,7 +572,7 @@ impl<'s> System<'s> for CollisionSystem {
         }
 
         if spawned > 0 {
-            trace!("SPAWNED: {}", spawned);
+            trace!("Asteroids Spawned: {}", spawned);
         }
 
         fn asteroid_data(

@@ -35,8 +35,16 @@ fn opts() -> App<'static, 'static> {
 }
 
 fn main() -> amethyst::Result<()> {
-    use amethyst::prelude::{Application, Config, GameDataBuilder};
-    use crate::{audio::Silent, states::MainGameState};
+    use amethyst::{
+        shred::DispatcherBuilder,
+        core::bundle::SystemBundle,
+        prelude::{Application, Config, GameDataBuilder}
+    };
+    use crate::{
+        audio::Silent,
+        states::{MainGameState, DataBuilder},
+        bundle::{GlobalBundle, MainBundle},
+    };
 
     amethyst::start_logger(Default::default());
 
@@ -68,20 +76,26 @@ fn main() -> amethyst::Result<()> {
 
     let assets_dir = format!("{}/assets/", app_root);
 
-    let game_data = GameDataBuilder::default()
+    let base = GameDataBuilder::default()
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?,
-        )?.with_bundle(self::bundle::MainBundle)?
+        )?
+
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
-        .with_bundle(TransformBundle::new().with_dep(&["physics_system"]))?
+        .with_bundle(TransformBundle::new())?
         .with_bundle(AudioBundle::new(|_: &mut Silent| None))?
-        .with_bundle(UiBundle::<String, String>::new())?;
+        .with_bundle(UiBundle::<String, String>::new())?
+        .with_bundle(GlobalBundle)?;
+
+    let mut main = DispatcherBuilder::default();
+    MainBundle.build(&mut main)?;
 
     let mut game = Application::build(assets_dir, game)?
         .with_frame_limit(
             FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)),
             144,
-        ).build(game_data)?;
+        )
+        .build(DataBuilder { base, main })?;
 
     game.run();
     Ok(())
