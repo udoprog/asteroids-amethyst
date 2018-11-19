@@ -2,7 +2,7 @@ use amethyst::{
     audio::AudioBundle,
     core::{frame_limiter::FrameRateLimitStrategy, transform::TransformBundle},
     input::InputBundle,
-    renderer::{ColorMask, DisplayConfig, DrawSprite, Pipeline, RenderBundle, Stage, ALPHA},
+    renderer::{ColorMask, DisplayConfig, DrawFlat2D, Pipeline, RenderBundle, Stage, ALPHA},
     ui::{DrawUi, UiBundle},
     utils::application_root_dir,
 };
@@ -62,7 +62,7 @@ fn main() -> amethyst::Result<()> {
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawSprite::new().with_transparency(ColorMask::all(), ALPHA, None))
+            .with_pass(DrawFlat2D::new().with_transparency(ColorMask::all(), ALPHA, None))
             .with_pass(DrawUi::new()),
     );
 

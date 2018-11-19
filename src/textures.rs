@@ -51,8 +51,6 @@ impl SpriteSheet {
         SpriteRender {
             sprite_sheet: self.handle.clone(),
             sprite_number,
-            flip_horizontal: false,
-            flip_vertical: false,
         }
     }
 }

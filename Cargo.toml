@@ -6,7 +6,7 @@ license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
-amethyst = {path = "../amethyst", version = "*"}
+amethyst = {git = "https://github.com/amethyst/amethyst", version = "*"}
 log = "0.4"
 smallvec = "0.6"
 rand = "0.5"
