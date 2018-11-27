@@ -2,8 +2,8 @@ use amethyst::{
     assets::{AssetStorage, Loader},
     ecs::World,
     renderer::{
-        self, PngFormat, SpriteRender, SpriteSheetFormat, SpriteSheetHandle,
-        Texture, TextureMetadata,
+        self, PngFormat, SpriteRender, SpriteSheetFormat, SpriteSheetHandle, Texture,
+        TextureMetadata,
     },
 };
 

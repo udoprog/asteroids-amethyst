@@ -15,7 +15,7 @@ use amethyst::{
 };
 use crate::{
     audio::Sounds,
-    components::{Bounded, Bullet, DeferredCollider, Collider, ConstrainedObject, Physical, Ship},
+    components::{Bounded, Bullet, Collider, ConstrainedObject, DeferredCollider, Physical, Ship},
     resources::{Asteroids, Bullets, Game, RandomGen, Score},
     ARENA_HEIGHT, ARENA_WIDTH,
 };
@@ -393,7 +393,6 @@ fn spawn_asteroid(
 /// Applies physics to `Physical` entities.
 ///
 /// The system applies velocity and rotation to the objects in the system.
-
 
 pub struct PhysicsSystem;
 

@@ -1,53 +1,14 @@
 use amethyst::{
-    shred::{
-        DispatcherBuilder, Dispatcher,
-    },
     assets::Loader,
-    core::{
-        ArcThreadPool,
-        transform::Transform,
-    },
+    core::transform::Transform,
     ecs::prelude::World,
     prelude::{
-        State, StateEvent, StateData, GameDataBuilder, GameData, Trans, Builder, DataInit,
+        dynamic::{StateCallback, Trans},
+        Builder,
     },
     renderer::{Camera, Projection},
     ui::{Anchor, TtfFormat, UiText, UiTransform},
-    input::is_close_requested,
 };
-
-pub struct Data<'a, 'b> {
-    // Base dispatcher.
-    pub base: GameData<'a, 'b>,
-    // Dispatcher for the main game.
-    pub main: Dispatcher<'a, 'b>,
-}
-
-#[derive(Default)]
-pub struct DataBuilder<'a, 'b> {
-    pub base: GameDataBuilder<'a, 'b>,
-    pub main: DispatcherBuilder<'a, 'b>,
-}
-
-impl<'a, 'b> DataInit<Data<'a, 'b>> for DataBuilder<'a, 'b> {
-    fn build(self, world: &mut World) -> Data<'a, 'b> {
-        let base = self.base.build(world);
-
-        let mut main = {
-            let pool = world.read_resource::<ArcThreadPool>();
-            self.main.with_pool(pool.clone()).build()
-        };
-
-        main.setup(&mut world.res);
-
-        Data {
-            base,
-            main,
-        }
-    }
-}
-
-type CustomTrans<'a, 'b> = Trans<Data<'a, 'b>, StateEvent>;
 
 use crate::{
     audio::initialise_audio,
@@ -56,25 +17,31 @@ use crate::{
     ARENA_HEIGHT, ARENA_WIDTH,
 };
 
-#[derive(Default)]
-pub struct MainGameState {
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum State {
+    Main,
+    Paused,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Main
+    }
+}
+
+pub struct MainState {
     pub player_is_immortal: bool,
 }
 
-impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for MainGameState {
-    fn on_start(&mut self, data: StateData<Data>) {
-        let StateData { world, .. } = data;
-
+impl<E> StateCallback<State, E> for MainState {
+    fn on_start(&mut self, world: &mut World) {
         Ships::initialize(world);
         Bullets::initialize(world);
         Asteroids::initialize(world);
         world.add_resource(RandomGen);
 
-        let game = {
-            let mut game = Game::default();
-            game.modifiers.player_is_immortal = self.player_is_immortal;
-            game
-        };
+        let mut game = Game::default();
+        game.modifiers.player_is_immortal = self.player_is_immortal;
 
         initialize_score(world, &game);
 
@@ -86,60 +53,23 @@ impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for MainGameState {
         initialise_audio(world);
     }
 
-    fn update(&mut self, data: StateData<Data>) -> CustomTrans<'a, 'b> {
-        let StateData {
-            data,
-            world,
-            ..
-        } = data;
-
-        let Data {
-            ref mut base,
-            ref mut main,
-        } = *data;
-
-        base.update(world);
-        main.dispatch(&world.res);
-
-        let Game {
-            restart, modifiers, ..
-        } = *world.read_resource::<Game>();
+    fn update(&mut self, world: &mut World) -> Trans<State> {
+        let Game { restart, .. } = *world.read_resource::<Game>();
 
         if restart {
             world.delete_all();
-
-            return Trans::Switch(Box::new(MainGameState {
-                player_is_immortal: self.player_is_immortal || modifiers.player_is_immortal,
-            }));
+            return Trans::Switch(State::Main);
         }
 
-        let Game {
-            ref mut pause, ..
-        } = *world.write_resource::<Game>();
+        let Game { ref mut pause, .. } = *world.write_resource::<Game>();
 
         if *pause {
             // NB: prevent a pause cycle by resetting the pause when acted on.
             *pause = false;
-            return Trans::Push(Box::new(PauseState));
+            return Trans::Push(State::Paused);
         }
 
         Trans::None
-    }
-
-    fn handle_event(
-        &mut self,
-        _data: StateData<Data>,
-        event: StateEvent,
-    ) -> CustomTrans<'a, 'b> {
-        if let StateEvent::Window(event) = &event {
-            if is_close_requested(&event) {
-                Trans::Quit
-            } else {
-                Trans::None
-            }
-        } else {
-            Trans::None
-        }
     }
 }
 
@@ -246,32 +176,15 @@ fn initialize_score(world: &mut World, game: &Game) {
     });
 }
 
-/// State used when game is paused.
-#[derive(Default)]
-pub struct PauseState;
+pub struct PausedState;
 
-impl<'a, 'b> State<Data<'a, 'b>, StateEvent> for PauseState {
-    fn on_start(&mut self, _: StateData<Data>) {
+impl<E> StateCallback<State, E> for PausedState {
+    fn on_start(&mut self, _: &mut World) {
         println!("Game Paused");
     }
 
-    fn update(&mut self, data: StateData<Data>) -> CustomTrans<'a, 'b> {
-        let StateData {
-            data,
-            world,
-            ..
-        } = data;
-
-        let Data {
-            ref mut base,
-            ..
-        } = *data;
-
-        base.update(world);
-
-        let Game {
-            ref mut pause, ..
-        } = *world.write_resource::<Game>();
+    fn update(&mut self, world: &mut World) -> Trans<State> {
+        let Game { ref mut pause, .. } = *world.write_resource::<Game>();
 
         if *pause {
             *pause = false;
