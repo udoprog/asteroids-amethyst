@@ -6,13 +6,15 @@ license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
-amethyst = {git = "https://github.com/amethyst/amethyst", version = "*"}
+amethyst = {path = "../amethyst", version = "*"}
 log = "0.4"
 smallvec = "0.6"
 rand = "0.5"
 ncollide2d = "0.17"
-shred = {version = "0.7", features = ["nightly"]}
 clap = "2.32"
 
 [features]
 sdl_controller = []
+
+[patch.crates-io]
+hibitset = {path = "../hibitset"}

@@ -36,13 +36,11 @@ fn opts() -> App<'static, 'static> {
 
 fn main() -> amethyst::Result<()> {
     use amethyst::{
-        shred::DispatcherBuilder,
-        core::bundle::SystemBundle,
-        prelude::{Application, Config, GameDataBuilder}
+        prelude::{dynamic::ApplicationBuilder, Config}
     };
     use crate::{
         audio::Silent,
-        states::{MainGameState, DataBuilder},
+        states::State,
         bundle::{GlobalBundle, MainBundle},
     };
 
@@ -51,8 +49,7 @@ fn main() -> amethyst::Result<()> {
     let app = opts();
     let matches = app.get_matches();
 
-    let mut game = MainGameState::default();
-    game.player_is_immortal = matches.is_present("god");
+    // GameState::new(matches.is_present("god"));
 
     let app_root = application_root_dir();
 
@@ -76,27 +73,27 @@ fn main() -> amethyst::Result<()> {
 
     let assets_dir = format!("{}/assets/", app_root);
 
-    let base = GameDataBuilder::default()
+    let mut app = ApplicationBuilder::new(assets_dir, State::Main)?
+        .with_defaults()
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?,
         )?
-
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_bundle(TransformBundle::new())?
         .with_bundle(AudioBundle::new(|_: &mut Silent| None))?
         .with_bundle(UiBundle::<String, String>::new())?
-        .with_bundle(GlobalBundle)?;
-
-    let mut main = DispatcherBuilder::default();
-    MainBundle.build(&mut main)?;
-
-    let mut game = Application::build(assets_dir, game)?
+        .with_bundle(GlobalBundle)?
+        .with_bundle(MainBundle)?
         .with_frame_limit(
             FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)),
             144,
         )
-        .build(DataBuilder { base, main })?;
+        .with_start(State::Main, states::main_start)
+        .with_update(State::Main, states::main_update)
+        .with_start(State::Paused, states::paused_start)
+        .with_update(State::Paused, states::paused_update)
+        .build()?;
 
-    game.run();
+    app.run();
     Ok(())
 }
