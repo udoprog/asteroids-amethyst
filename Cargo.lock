@@ -34,7 +34,7 @@ dependencies = [
 [[package]]
 name = "amethyst"
 version = "0.9.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_animation 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -52,7 +52,6 @@ dependencies = [
  "crossbeam-channel 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "fern 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashbrown 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc_version_runtime 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -66,7 +65,7 @@ dependencies = [
 [[package]]
 name = "amethyst_animation"
 version = "0.4.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -85,7 +84,7 @@ dependencies = [
 [[package]]
 name = "amethyst_assets"
 version = "0.5.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "crossbeam 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -105,7 +104,7 @@ dependencies = [
 [[package]]
 name = "amethyst_audio"
 version = "0.4.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -119,7 +118,7 @@ dependencies = [
 [[package]]
 name = "amethyst_config"
 version = "0.8.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "ron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -129,7 +128,7 @@ dependencies = [
 [[package]]
 name = "amethyst_controls"
 version = "0.3.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -142,7 +141,7 @@ dependencies = [
 [[package]]
 name = "amethyst_core"
 version = "0.4.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "approx 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -161,7 +160,7 @@ dependencies = [
 [[package]]
 name = "amethyst_derive"
 version = "0.2.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "proc-macro2 0.4.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -171,7 +170,7 @@ dependencies = [
 [[package]]
 name = "amethyst_input"
 version = "0.5.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_config 0.8.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -185,7 +184,7 @@ dependencies = [
 [[package]]
 name = "amethyst_locale"
 version = "0.3.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -195,7 +194,7 @@ dependencies = [
 [[package]]
 name = "amethyst_network"
 version = "0.2.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "bincode 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -210,7 +209,7 @@ dependencies = [
 [[package]]
 name = "amethyst_renderer"
 version = "0.9.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_core 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -243,7 +242,7 @@ dependencies = [
 [[package]]
 name = "amethyst_ui"
 version = "0.4.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_audio 0.4.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -271,7 +270,7 @@ dependencies = [
 [[package]]
 name = "amethyst_utils"
 version = "0.4.0"
-source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#d6e705d97d79d332426ef5214e2340beb207b989"
+source = "git+https://github.com/udoprog/amethyst?branch=enum-state-machine#bde94e1d2f2672a9bfa291689b181f09ebe0d3ea"
 dependencies = [
  "amethyst_assets 0.5.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
  "amethyst_controls 0.3.0 (git+https://github.com/udoprog/amethyst?branch=enum-state-machine)",
@@ -1270,15 +1269,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rusttype 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "xi-unicode 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "scopeguard 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2852,7 +2842,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum glutin 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "535c6eda58adbb227604b2db10a022ffd6339d7ea3e970f338e7d98aeb24fcc3"
 "checksum glyph_brush 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "83a8e5d17f3711dcf45434148b4c36b89c3f6320af00a6c0daa095dfdada4eea"
 "checksum glyph_brush_layout 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e1c00a04cfe112ff6d3ecf03185653a32447080bc60977df44aa98c98b3bdce2"
-"checksum hashbrown 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "72d9de4ebc5b184289fc3db3a3c023b072e56c649e32fcfcd434636e7ba912d4"
 "checksum hetseq 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "678ce8a798c45dc999c4ebfeb7f89b6d54a7953d114f9f52746679abb9dda6ae"
 "checksum hibitset 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a795da5d89ae959c6765f92de69d0f1642134a80f0898f0ab231f7d67ffc5749"
 "checksum hound 3.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8a164bb2ceaeff4f42542bdb847c41517c78a60f5649671b2a07312b6e117549"

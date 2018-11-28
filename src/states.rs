@@ -8,6 +8,7 @@ use amethyst::{
     },
     renderer::{Camera, Projection},
     ui::{Anchor, TtfFormat, UiText, UiTransform},
+    derive::State,
 };
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
     ARENA_HEIGHT, ARENA_WIDTH,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(State, Debug, Clone, PartialEq, Eq)]
 pub enum State {
     Main,
     Paused,
