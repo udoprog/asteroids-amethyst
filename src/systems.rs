@@ -76,6 +76,7 @@ impl ActionTransition {
     }
 
     /// Call the given callback if action is deactivated.
+    #[allow(unused)]
     pub fn deactivated(self, mut c: impl FnMut()) {
         if let ActionTransition::Deactivated = self {
             c();

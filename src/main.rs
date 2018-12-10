@@ -54,9 +54,9 @@ fn main() -> amethyst::Result<()> {
     let mut game = MainGameState::default();
     game.player_is_immortal = matches.is_present("god");
 
-    let app_root = application_root_dir();
+    let app_root = application_root_dir()?;
 
-    let display_config_path = format!("{}/resources/display.ron", app_root);
+    let display_config_path = app_root.join("resources/display.ron");
     let config = DisplayConfig::load(&display_config_path);
 
     let pipe = Pipeline::build().with_stage(
@@ -68,19 +68,18 @@ fn main() -> amethyst::Result<()> {
 
     let key_bindings_path = {
         if cfg!(feature = "sdl_controller") {
-            format!("{}/resources/input_controller.ron", app_root)
+            app_root.join("resources/input_controller.ron")
         } else {
-            format!("{}/resources/input.ron", app_root)
+            app_root.join("resources/input.ron")
         }
     };
 
-    let assets_dir = format!("{}/assets/", app_root);
+    let assets_dir = app_root.join("assets");
 
     let base = GameDataBuilder::default()
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?,
         )?
-
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_bundle(TransformBundle::new())?
         .with_bundle(AudioBundle::new(|_: &mut Silent| None))?

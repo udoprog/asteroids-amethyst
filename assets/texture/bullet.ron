@@ -1,12 +1,12 @@
 (
-    spritesheet_width: 16.0,
-    spritesheet_height: 16.0,
+    spritesheet_width: 16,
+    spritesheet_height: 16,
     sprites: [
         (
-            x: 0.0,
-            y: 0.0,
-            width: 4.0,
-            height: 6.0,
+            x: 0,
+            y: 0,
+            width: 4,
+            height: 6,
         ),
     ],
 )
